@@ -25,3 +25,5 @@
 ## y axis is number of cases). Add a mark at each week flagged as start week.
 ## Use this function to see if the flag definition makes sense.
 
+## Create a test harnass for stat learning algos from  http://scikit-learn.org/
+
