@@ -1,3 +1,7 @@
+#!/usr/bin/pyhton
+
+
+
 ## code skeleton for analysis pipeline
 ##
 ## ASSUME the rsv data is in the file ../data/rsv.csv
@@ -27,3 +31,23 @@
 
 ## Create a test harnass for stat learning algos from  http://scikit-learn.org/
 
+
+
+
+
+
+
+if __name__ == "__main__":
+
+    read_data("BLOSUM62.txt")
+
+    table = np.zeros(shape=(len(s) + 1, len(t) + 1), dtype=np.int)
+    trace = np.zeros(shape=(len(s) + 1, len(t) + 1), dtype=np.int)
+    [table, trace] = creat_DP_table(table, trace)
+    c = np.unravel_index(np.argmax(table), table.shape)
+    [s_result, t_result] = trace_back(trace,c)
+    
+    print table.T
+    #print trace
+    print "t: " + t_result
+    print "s: " + s_result
