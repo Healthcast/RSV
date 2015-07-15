@@ -84,18 +84,44 @@ def read_data(address):
 def plot_seasons():
     global data, date, city, label
 
-    for i = range(len(city)):
-        for j = range(len(date)):
-            for p in range(2009, 2015):
-                d = date[j].split('-').[0]
-                if d[0] = p:
-                    
+    t={}
+    se=[]
+
+    for p in range(2009, 2015):
+        start=0
+        end=0
+        for j in range(len(date)-1):
+            d = date[j].split('-')
+            if str(p) == d[0] and d[1] == '10' and start == 0:
+                se.append(j)
+                start = 1
+            d = date[j+1].split('-')
+            if str(p+1) == d[0] and d[1] == '07' and end ==0:
+                se.append(j)     
+                end=1
+
+    se.append(len(date)-1)
+
+    for i in range(len(city)):
+        for p in range(2009, 2015):
+            c = (p-2009)*2
+            t[city[i] + "_" + str(p)] = data[se[c]:se[c+1], i]
+            
+    
+    for i in t.keys():
+        plt.plot(t[i], '-', linewidth=2)
+        plt.savefig("./image1/"+i+".png")
+        plt.close()
+       
+    for i in range (len(city)):
+        plt.plot(data.T[i], '-', linewidth=2)
+        plt.savefig("./image2/"+city[i]+".png")
+        plt.close()
     
         
     
-#    print data.T[0]
-#    line, = plt.plot(data.T[0], '-', linewidth=2)
-#    plt.show()
+        
+    
 
 
 
