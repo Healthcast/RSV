@@ -140,6 +140,7 @@ def plot_seasons():
         for j in range(len(ylabel.T[i])-1):
             if ylabel.T[i,j] == 1 :
                 plt.plot([j, j],[0, height], 'r-', linewidth=2)
+                plt.text(j,0, "2009")
         
         plt.savefig("./image2/"+city[i]+".png")
         plt.close()
