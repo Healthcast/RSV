@@ -100,22 +100,47 @@ def read_data(address):
                 
 def plot_seasons():
     global data, date, city, ylabel, season_start_date
-
+    height = 250
     t={}
 
+    #loading data
     for i in range(len(city)):
         for m in range(len(season_start_date)-1):
-            t[city[i] + "_" + str(m+2008)] = \
-                      data[season_start_date[m]:season_start_date[m+1]-1, i]
+            t[city[i] + "_" + str(m+2008)] = [ i,m]
             
-    
+
+    #plot data for every season
     for i in t.keys():
-        plt.plot(t[i], '-', linewidth=2)
+        d = data[season_start_date[t[i][1]]:season_start_date[t[i][1]+1]-1, \
+                 t[i][0]]
+        y = ylabel[season_start_date[t[i][1]]:season_start_date[t[i][1]+1]-1, \
+                 t[i][0]]
+        
+        plt.plot(d, '-', linewidth=2)
+
+        #plot the start week
+        for j in range(len(y)):
+            if y[j] == 1 :
+                plt.plot([j, j],[0, height], 'r-', linewidth=2)
+    
         plt.savefig("./image1/"+i+".png")
         plt.close()
-       
+
+
+
+    #plot data for all years
     for i in range (len(city)):
-        plt.plot(data.T[i], '-', linewidth=2)
+        plt.plot(data.T[i], 'b-', linewidth=2)
+
+        # plot season boundry
+        for m in season_start_date:
+            plt.plot([m, m],[0, height], 'y--', linewidth=1)
+
+        #plot the start week
+        for j in range(len(ylabel.T[i])-1):
+            if ylabel.T[i,j] == 1 :
+                plt.plot([j, j],[0, height], 'r-', linewidth=2)
+        
         plt.savefig("./image2/"+city[i]+".png")
         plt.close()
     
