@@ -107,7 +107,7 @@ def plot_seasons():
     for i in range(len(city)):
         for m in range(len(season_start_date)-1):
             t[city[i] + "_" + str(m+2008)] = [ i,m]
-            
+
 
     #plot data for every season
     for i in t.keys():
@@ -115,6 +115,7 @@ def plot_seasons():
                  t[i][0]]
         y = ylabel[season_start_date[t[i][1]]:season_start_date[t[i][1]+1]-1, \
                  t[i][0]]
+        d2 = date[season_start_date[t[i][1]]:season_start_date[t[i][1]+1]-1]
         
         plt.plot(d, '-', linewidth=2)
 
@@ -122,10 +123,11 @@ def plot_seasons():
         for j in range(len(y)):
             if y[j] == 1 :
                 plt.plot([j, j],[0, height], 'r-', linewidth=2)
-    
+                plt.text(j, 220, d2[j])
+                
+                
         plt.savefig("./image1/"+i+".png")
         plt.close()
-
 
 
     #plot data for all years
@@ -136,12 +138,21 @@ def plot_seasons():
         for m in season_start_date:
             plt.plot([m, m],[0, height], 'y--', linewidth=1)
 
+        for m in range(1, len(season_start_date)-1):
+            a = season_start_date[m]
+            plt.text(a-5,255, date[a].split('-')[0])                        
+
         #plot the start week
+        up=1
         for j in range(len(ylabel.T[i])-1):
             if ylabel.T[i,j] == 1 :
                 plt.plot([j, j],[0, height], 'r-', linewidth=2)
-                plt.text(j,0, "2009")
-        
+                if up==1:
+                    plt.text(j-10, 225, date[j])
+                    up=0
+                else:
+                    plt.text(j-10, 215, date[j])
+                    up=1
         plt.savefig("./image2/"+city[i]+".png")
         plt.close()
     
