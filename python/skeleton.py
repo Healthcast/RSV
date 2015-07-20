@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 
 data = np.zeros(shape=(10,10), dtype=np.int)
 date = []
-city = ["tot","Koln","Berlin","Bonn","Dusseldorf","Freiburg","Koln2","Munster","Hamburg","Hannover","Jena","Regensburg","Wurzburg","Tubingen","Weiden","Basel","Wiesbaden","Munchen","Ulm","Munchen2","Marburg","Bad Oeynhausen","Wien","Giessen","Innsbruck","Bern","Essen","Mainz","Zurich","Groningen","Essen","Aachen"]
+city = ["tot","Koln","Berlin","Bonn","Dusseldorf","Freiburg","Koln2","Munster","Hamburg","Hannover","Jena","Regensburg","Wurzburg","Tubingen","Weiden","Basel","Wiesbaden","Munchen","Ulm","Munchen2","Marburg","Bad Oeynhausen","Wien","Giessen","Innsbruck","Bern","Essen","Mainz","Zurich","Groningen","Essen2","Aachen"]
 ylabel = np.zeros(shape=(10,10), dtype=np.int) #1:yes. 0:not the start week
 data = np.zeros(shape=(10,10), dtype=np.int)
 season_start_date=[]
@@ -158,12 +158,45 @@ def plot_seasons():
     
         
     
-        
+def screen_confused_data():
+    global data, date, city, ylabel, season_start_date
+
+    #all zeros data
+    all_0="#all zeros, confused data"
+    l=[]
+    for j in range (len(city)):
+        if sum(data.T[j])<10:
+            l.append(city[j])
+            all_0 = all_0 + "\n" + city[j]
+
     
+    #partial zeros data
+    partial_0="#partial zeros, confused data"
+    dic ={}
+    for j in range (len(city)):
+        for m in range(len(season_start_date)-1):
+            a=sum(data[season_start_date[m]:season_start_date[m+1]-1, j])
+            if a < 1 and city[j] not in l:
+                if dic.has_key(city[j]):
+                    dic[city[j]].append(date[season_start_date[m]])
+                else:
+                    dic[city[j]] = [date[season_start_date[m]]]
 
 
+    for i in dic.keys():
+        partial_0 += "\n" + i + "\n" + ', '.join(dic[i])
+
+    f = open('confused_data', 'w')
+    t=all_0 + "\n\n" + partial_0 + "\n\n" + "available data\n" + \
+       ', '.join([x for x in city if x not in dic.keys() if x not in l])
+    f.write(t)
+    f.close()
+
+
+    
 
 if __name__ == "__main__":
 
     read_data("../data/rsv.csv")
-    plot_seasons()    
+#    plot_seasons()
+    screen_confused_data()
