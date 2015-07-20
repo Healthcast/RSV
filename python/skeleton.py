@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 data = np.zeros(shape=(10,10), dtype=np.int)
 date = []
 city = ["tot","Koln","Berlin","Bonn","Dusseldorf","Freiburg","Koln2","Munster","Hamburg","Hannover","Jena","Regensburg","Wurzburg","Tubingen","Weiden","Basel","Wiesbaden","Munchen","Ulm","Munchen2","Marburg","Bad Oeynhausen","Wien","Giessen","Innsbruck","Bern","Essen","Mainz","Zurich","Groningen","Essen","Aachen"]
-ylabel = np.zeros(shape=(10,10), dtype=np.int)
+ylabel = np.zeros(shape=(10,10), dtype=np.int) #1:yes. 0:not the start week
 data = np.zeros(shape=(10,10), dtype=np.int)
 season_start_date=[]
 
@@ -48,7 +48,7 @@ season_start_date=[]
 
 
 def read_data(address):
-    global data, date, city, label, season_start_date
+    global data, date, city, ylabel, season_start_date
     l=[]
     with open(address) as csvfile:
         r = csv.DictReader(csvfile)
@@ -56,12 +56,14 @@ def read_data(address):
             l.append(line)
 
     #remove data in August and September
+    newl=[]
     for i in l:
-        d=i[''].split('-')
-        if int(d[1]) == 8 or int(d[1]) == 9:
-            del i
-      
-    for i in l:
+        d = i[''].split('-')
+        if int(d[1]) != 7 and int(d[1]) != 8 and int(d[1]) != 9:
+            newl.append(i)
+
+    #insert date data
+    for i in newl:
         date.append(i[''])
         del i['']
 
@@ -70,11 +72,11 @@ def read_data(address):
     ylabel = np.zeros(shape=(len(date), len(city)), dtype=np.int)
 
     #insert patient data
-    for i in range(len(l)):
-        data[i] = [l[i][x] for x in city]
+    for i in range(len(newl)):
+        data[i] = [newl[i][x] for x in city]
 
     #determine the start week of each season: Octorber 01
-    for p in range(2009, 2015):
+    for p in range(2009, 2016):
         start=0
         for j in range(len(date)):
             d = date[j].split('-')
@@ -82,46 +84,29 @@ def read_data(address):
                 season_start_date.append(j)
                 start = 1
     season_start_date = [0] + season_start_date
+    season_start_date = season_start_date + [len(date)-1]
 
-    #label and insert the "start week"
+    #label and insert the "start week" to ylabel
     for j in range (len(city)):
-        label.append([])
-        had_one=0
-        for p in season_start_date[]
-        for i in range (len(date)-2):
-            if data[i,j]>0 and data[i+1,j] > data[i,j] and data[i+2,j] > \
-                   data[i,j] and had_one==0:
-                label[j].append('Y')
-                had_one=1
-            else:    label[j].append('N')
-    
+        for m in range(len(season_start_date)-1):
+            had_one=0
+            for i in range(season_start_date[m], season_start_date[m+1]-1):
+                if data[i,j]>0 and data[i+1,j] > data[i,j] and data[i+2,j] > \
+                       data[i,j] and had_one==0:
+                    ylabel[i,j] = 1
+                    had_one=1
+                else:    ylabel[i,j] = 0
 
                 
 def plot_seasons():
-    global data, date, city, label
+    global data, date, city, ylabel, season_start_date
 
     t={}
-    se=[]
-
-    for p in range(2009, 2015):
-        start=0
-        end=0
-        for j in range(len(date)-1):
-            d = date[j].split('-')
-            if str(p) == d[0] and d[1] == '10' and start == 0:
-                se.append(j)
-                start = 1
-            d = date[j+1].split('-')
-            if str(p+1) == d[0] and d[1] == '07' and end ==0:
-                se.append(j)     
-                end=1
-
-    se.append(len(date)-1)
 
     for i in range(len(city)):
-        for p in range(2009, 2015):
-            c = (p-2009)*2
-            t[city[i] + "_" + str(p)] = data[se[c]:se[c+1], i]
+        for m in range(len(season_start_date)-1):
+            t[city[i] + "_" + str(m+2008)] = \
+                      data[season_start_date[m]:season_start_date[m+1]-1, i]
             
     
     for i in t.keys():
@@ -144,4 +129,4 @@ def plot_seasons():
 if __name__ == "__main__":
 
     read_data("../data/rsv.csv")
-#    plot_seasons()    
+    plot_seasons()    
