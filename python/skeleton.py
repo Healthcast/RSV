@@ -40,20 +40,21 @@ import matplotlib.pyplot as plt
 data = np.zeros(shape=(10,10), dtype=np.int)
 date = []
 city = ["tot","Koln","Berlin","Bonn","Dusseldorf","Freiburg","Koln2","Munster","Hamburg","Hannover","Jena","Regensburg","Wurzburg","Tubingen","Weiden","Basel","Wiesbaden","Munchen","Ulm","Munchen2","Marburg","Bad Oeynhausen","Wien","Giessen","Innsbruck","Bern","Essen","Mainz","Zurich","Groningen","Essen","Aachen"]
-label = []
-
+ylabel = np.zeros(shape=(10,10), dtype=np.int)
+data = np.zeros(shape=(10,10), dtype=np.int)
+season_start_date=[]
 
 
 
 
 def read_data(address):
-    global data, date, city, label
+    global data, date, city, label, season_start_date
     l=[]
     with open(address) as csvfile:
         r = csv.DictReader(csvfile)
         for line in r:
             l.append(line)
-            
+
     #remove data in August and September
     for i in l:
         d=i[''].split('-')
@@ -63,18 +64,33 @@ def read_data(address):
     for i in l:
         date.append(i[''])
         del i['']
-  
-    data = np.zeros(shape=(len(date), len(city)), dtype=np.int)
 
+    #init ylabel and date 
+    data = np.zeros(shape=(len(date), len(city)), dtype=np.int)
+    ylabel = np.zeros(shape=(len(date), len(city)), dtype=np.int)
+
+    #insert patient data
     for i in range(len(l)):
-        data[i] = [l[i][x] for x in city]          
-#    print [x for x in city]          
+        data[i] = [l[i][x] for x in city]
+
+    #determine the start week of each season: Octorber 01
+    for p in range(2009, 2015):
+        start=0
+        for j in range(len(date)):
+            d = date[j].split('-')
+            if str(p) == d[0] and d[1] == '10' and start == 0:
+                season_start_date.append(j)
+                start = 1
+    season_start_date = [0] + season_start_date
+
+    #label and insert the "start week"
     for j in range (len(city)):
         label.append([])
         had_one=0
+        for p in season_start_date[]
         for i in range (len(date)-2):
             if data[i,j]>0 and data[i+1,j] > data[i,j] and data[i+2,j] > \
-                   data[i+1,j] and had_one==0:
+                   data[i,j] and had_one==0:
                 label[j].append('Y')
                 had_one=1
             else:    label[j].append('N')
@@ -128,4 +144,4 @@ def plot_seasons():
 if __name__ == "__main__":
 
     read_data("../data/rsv.csv")
-    plot_seasons()    
+#    plot_seasons()    
