@@ -3,6 +3,9 @@
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn import datasets, neighbors, linear_model
+from sklearn import svm
+
 
 
 ## Code skeleton for analysis pipeline
@@ -200,3 +203,21 @@ if __name__ == "__main__":
     read_data("../data/rsv.csv")
 #    plot_seasons()
     screen_confused_data()
+
+
+    iris = datasets.load_iris()
+    iris_X = iris.data
+    iris_y = iris.target
+    np.unique(iris_y)
+
+    svc = svm.SVC(kernel='linear')
+#    svc.fit([[x] for x in iris_X[0:,0]], iris_y)
+    svc.fit(iris_X, iris_y)
+    r = svc.predict(iris_X)
+
+    for i in range(len(r)):
+        if r[i] != iris_y[i]:
+            print r[i]
+            print iris_y[i]
+            print "===="
+    
