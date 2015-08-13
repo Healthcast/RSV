@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets, neighbors, linear_model
 from sklearn import svm
+from sklearn import metrics
+from sklearn.cross_validation import train_test_split
 
 
 
@@ -196,6 +198,59 @@ def screen_confused_data():
     f.close()
 
 
+
+def test_performance():
+    iris = datasets.load_iris()
+    iris_X = iris.data
+    iris_y = iris.target
+    iris_y = iris_y/2
+
+    #simple test
+    X_train, X_test, y_train, y_test = train_test_split(iris_X, iris_y, test_size=.5, \
+                                                        random_state=0)
+    svc = svm.SVC(kernel='linear')
+    scores = svc.fit(X_train, y_train).decision_function(X_test)
+    r = svc.predict(X_test)
+
+    #test performence method: accuracy, confusion matrix, precision, recall
+    #ROC, AUC, classification report
+    
+    #accuracy: number of correct prediction / number of all cases
+    print "\ntest accuracy:"
+    print metrics.accuracy_score(y_test, r)
+
+    #precision: tp/(tp+fp)
+    print "\ntest precision:"
+    print metrics.precision_score(y_test, r)
+
+    #precision: tp/(tp+fn)
+    print "\ntest recall:"
+    print metrics.recall_score(y_test, r)
+
+    #confusion matrix:
+    print "\nconfusion matrix:"
+    print metrics.confusion_matrix(y_test, r)
+
+    #test roc curve and auc
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, scores, pos_label=1)
+    roc_auc = metrics.auc(fpr, tpr)
+    print "\ntest auc : " + str(roc_auc)
+    plt.figure()
+    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
+
+    #classification report
+    print "\ntest callsification report:"
+    print metrics.classification_report(y_test, r)
+
+
+    def test_SVM():
+        #modify kernel
+        #modify C to control the soft margin
+    
     
 
 if __name__ == "__main__":
@@ -203,21 +258,5 @@ if __name__ == "__main__":
     read_data("../data/rsv.csv")
 #    plot_seasons()
     screen_confused_data()
-
-
-    iris = datasets.load_iris()
-    iris_X = iris.data
-    iris_y = iris.target
-    np.unique(iris_y)
-
-    svc = svm.SVC(kernel='linear')
-#    svc.fit([[x] for x in iris_X[0:,0]], iris_y)
-    svc.fit(iris_X, iris_y)
-    r = svc.predict(iris_X)
-
-    for i in range(len(r)):
-        if r[i] != iris_y[i]:
-            print r[i]
-            print iris_y[i]
-            print "===="
-    
+    test_performance()
+    test_SVM()    
