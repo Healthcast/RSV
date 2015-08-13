@@ -167,33 +167,73 @@ def screen_confused_data():
     global data, date, city, ylabel, season_start_date
 
     #all zeros data
-    all_0="#all zeros, confused data"
-    l=[]
+    all_0_t=""
+    all_0_data={}
     for j in range (len(city)):
-        if sum(data.T[j])<10:
-            l.append(city[j])
-            all_0 = all_0 + "\n" + city[j]
+        s = sum(data.T[j])
+        if s < 10:
+            all_0_data[city[j]] = s
+            
+    for i in all_0_data.keys():
+        all_0_t += i + "  " + str(all_0_data[i]) + "\n"
 
     
     #partial zeros data
-    partial_0="#partial zeros, confused data"
-    dic ={}
+    partial_0_t=""
+    partial_0_data ={}
     for j in range (len(city)):
         for m in range(len(season_start_date)-1):
             a=sum(data[season_start_date[m]:season_start_date[m+1]-1, j])
-            if a < 1 and city[j] not in l:
-                if dic.has_key(city[j]):
-                    dic[city[j]].append(date[season_start_date[m]])
+            if a < 1:
+                if partial_0_data.has_key(city[j]):
+                    partial_0_data[city[j]].append(date[season_start_date[m]])
                 else:
-                    dic[city[j]] = [date[season_start_date[m]]]
+                    partial_0_data[city[j]] = [date[season_start_date[m]]]
 
+    for i in partial_0_data.keys():
+        partial_0_t += i + "\n" + ', '.join(partial_0_data[i]) + "\n"
 
-    for i in dic.keys():
-        partial_0 += "\n" + i + "\n" + ', '.join(dic[i])
+    #sharp data
+    sharp_data={}
+    sharp_t=""
+    for j in range (len(city)):
+        for m in range(len(season_start_date)-1):
+            s_data = data[season_start_date[m]:season_start_date[m+1]-1, j]
+            for i in range(len(s_data)-2):
+                if s_data[i+1] - s_data[i] > 100:
+                    if sharp_data.has_key(city[j]):
+                        sharp_data[city[j]].append(date[season_start_date[m]])
+                    else:
+                        sharp_data[city[j]] = [date[season_start_date[m]]]
+    for i in sharp_data.keys():
+        sharp_t += i + "\n" + ', '.join(sharp_data[i]) + "\n"
 
+    
+    #print all confused data
+    t=""
+    t += "#####################################\n"
+    t += "#all zeros data\n"
+    t += "#Definition: the city i will be reported if the number of patients < 10\n"
+    t += "#####################################\n"
+    t += all_0_t + "\n\n" 
+    t += "#####################################\n"
+    t += "#partial zeros data\n"
+    t += "#Definition: the city i in season j will be reported" + \
+         "if the number of patients of i in j = 0\n"
+    t += "#####################################\n"
+    t += partial_0_t + "\n\n"
+    t += "#####################################\n"
+    t += "#sharp data\n"
+    t += "#Definition: the city i in season j will be reported" + \
+         "if (the number of patients of week m+1) - (that of m) > 100\n"
+    t += "#####################################\n"
+    t +=  sharp_t + "\n\n"
+    t += "#####################################\n"
+    t += "#available data\n"
+    t += "#####################################\n"
+    t += ', '.join([x for x in city if x not in partial_0_data.keys() \
+                    if x not in all_0_data.keys() if x not in sharp_data.keys()])
     f = open('confused_data', 'w')
-    t=all_0 + "\n\n" + partial_0 + "\n\n" + "available data\n" + \
-       ', '.join([x for x in city if x not in dic.keys() if x not in l])
     f.write(t)
     f.close()
 
@@ -251,12 +291,12 @@ def test_performance():
         #modify kernel
         #modify C to control the soft margin
     
-    
+        print "SVM"    
 
 if __name__ == "__main__":
 
     read_data("../data/rsv.csv")
 #    plot_seasons()
     screen_confused_data()
-    test_performance()
-    test_SVM()    
+#    test_performance()
+#    test_SVM()    
