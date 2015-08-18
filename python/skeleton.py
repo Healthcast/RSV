@@ -7,39 +7,7 @@ from sklearn import datasets, neighbors, linear_model
 from sklearn import svm
 from sklearn import metrics
 from sklearn.cross_validation import train_test_split
-
-
-
-## Code skeleton for analysis pipeline
-##
-## ASSUME the rsv data is in the file ../data/rsv.csv
-## I put the data in a separate directory so it is easy to
-## keep it out of the repo. We have to be very strict about
-## NEVER including the data; Git makes it very hard to remove
-## something once it has been added.
-
-## From the file ../data/rsv.csv,
-
-## extract for each city,
-##   each season which has recorded activity
-##   Preliminary definitions:
-##      a season is the period 1 Oct to 1 July, spanning the new year
-##      "recorded activity" means at least 3 weeks with > 0 cases
-
-## For each extracted season, flag the start week of the epidemic
-##   Preliminary flag:
-##      start week is the first week with >0 cases, for which the
-##      next two weeks show more cases than the initial week.
-##      In each of the following, the first positive integer marks
-##      the start week: (0,0,1,2,3) (0,4,12,12)  (0,3,20,17)
-
-## Make a function which plots each season as a line graph (x axis is time,
-## y axis is number of cases). Add a mark at each week flagged as start week.
-## Use this function to see if the flag definition makes sense.
-
-## Create a test harnass for stat learning algos from  http://scikit-learn.org/
-
-
+from sklearn.ensemble import RandomForestClassifier
 
 
 data = np.zeros(shape=(10,10), dtype=np.int)
@@ -75,6 +43,7 @@ def read_data(address):
     #init ylabel and date 
     data = np.zeros(shape=(len(date), len(city)), dtype=np.int)
     ylabel = np.zeros(shape=(len(date), len(city)), dtype=np.int)
+
 
     #insert patient data
     for i in range(len(newl)):
@@ -200,7 +169,7 @@ def screen_confused_data():
         for m in range(len(season_start_date)-1):
             s_data = data[season_start_date[m]:season_start_date[m+1]-1, j]
             for i in range(len(s_data)-2):
-                if s_data[i+1] - s_data[i] > 100:
+                if abs(s_data[i+1] - s_data[i]) > 100 :
                     if sharp_data.has_key(city[j]):
                         sharp_data[city[j]].append(date[season_start_date[m]])
                     else:
@@ -225,7 +194,7 @@ def screen_confused_data():
     t += "#####################################\n"
     t += "#sharp data\n"
     t += "#Definition: the city i in season j will be reported" + \
-         "if (the number of patients of week m+1) - (that of m) > 100\n"
+         "if |(the number of patients of week m+1) - (that of m)| > 100\n"
     t += "#####################################\n"
     t +=  sharp_t + "\n\n"
     t += "#####################################\n"
@@ -287,16 +256,129 @@ def test_performance():
     print metrics.classification_report(y_test, r)
 
 
-    def test_SVM():
-        #modify kernel
-        #modify C to control the soft margin
+def test_SVM():
+    iris = datasets.load_iris()
+    iris_X = iris.data[:,:2]
+    iris_y = iris.target
+    X_train, X_test, y_train, y_test = train_test_split(iris_X, iris_y, test_size=.5, \
+                                                        random_state=0)
+    #modify kernel
+    #kernels:'linear', 'poly', 'rbf', 'sigmoid', 'precomputed'
+    #modify C to control the soft margin: large C, more soft
+    svc = svm.SVC(kernel='linear', C=10.0)
+    svc.fit(X_train, y_train)
+
+    #plot the results
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02), np.arange(y_min, y_max,\
+    0.02))
+
+    print len(np.c_[xx.ravel(), yy.ravel()])
+    Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+        
+    plt.contourf(xx, yy, Z )
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=plt.cm.Paired)
+
+    plt.show()                                         
     
-        print "SVM"    
+
+
+def test_knn():
+    iris = datasets.load_iris()
+    iris_X = iris.data[:,:2]
+    iris_y = iris.target
+    X_train, X_test, y_train, y_test = train_test_split(iris_X, iris_y, test_size=.5, \
+                                                        random_state=0)
+    #n: number of neighbors
+    #weights: uniform or distance
+    clf = neighbors.KNeighborsClassifier(15, weights='uniform')
+    clf.fit(X_train, y_train)
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02), np.arange(y_min, y_max, 0.02))
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.pcolormesh(xx, yy, Z)
+
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("3-Class classification (k = %i, weights = '%s')"%(15, 'uniform'))
+    plt.show()
+
+def test_RF():
+    
+    iris = datasets.load_iris()
+    iris_X = iris.data[:,:2]
+    iris_y = iris.target
+    X_train, X_test, y_train, y_test = train_test_split(iris_X, iris_y, test_size=.5, \
+                                                        random_state=0)
+    #test max_depth: the max depth of the tree
+    #test n_estimators: how many trees used
+    #test max_features: how many good features used in each split
+    clf = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
+    clf.fit(X_train, y_train)
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02), np.arange(y_min, y_max, 0.02))
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.pcolormesh(xx, yy, Z)
+
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("3-Class classification (k = %i, weights = '%s')"%(15, 'uniform'))
+    plt.show()
+        
+
+def test_weather_data():
+    global city, data
+    l=[]
+    avi_city = []
+    a=0
+    with open("../data/temperature.csv") as csvfile:
+        r = csv.DictReader(csvfile)
+        for line in r:
+            l.append(line)
+            if a >10:
+                break
+            a+=1
+    for x in l[0]:
+        if x in city:
+            avi_city.append(x)
+    t = np.zeros(shape=(len(date), len(avi_city)), dtype=np.int)             
+    t2 = np.zeros(shape=(len(date), len(avi_city)), dtype=np.int)             
+    w_tempreture = np.zeros(shape=(len(date), len(avi_city)), dtype=np.int)             
+    W_meanAbsHum = np.zeros(shape=(len(date), len(avi_city)), dtype=np.int)
+    
+    for i in range(len(l)):
+        for a in l[i].keys():
+            if l[i][a] == 'NA':    #handle missing value
+                l[i][a] = '-999'
+        t[i] = [float(l[i][x]) for x in avi_city]
+
+    print sum(t[0:2, :])
+    for i in range(0, len(l), 7):
+        t2[i/7] = sum(t[i:i+7, :])
+    print len(t2)
+    print len(t2[0])
+    print len(data)
+        
+        
 
 if __name__ == "__main__":
-
     read_data("../data/rsv.csv")
 #    plot_seasons()
     screen_confused_data()
 #    test_performance()
-#    test_SVM()    
+#    test_SVM()
+#    test_knn()
+#    test_RF()
+    test_weather_data()
