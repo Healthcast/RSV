@@ -15,8 +15,8 @@ from sklearn.ensemble import RandomForestClassifier
 paras={
     "clf": "svm",
     "eva": "accuracy",
-    "city":"Koln",
-    "svm":[10, "linear"],
+    "city":"Munchen",
+    "svm":[1, "linear"],
     "knn":[10, "uniform"],
     "rf":[10, 10, 1],
     "features":["temperature"]

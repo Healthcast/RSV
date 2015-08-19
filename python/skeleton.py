@@ -331,6 +331,7 @@ def test_RF():
     plt.figure()
     plt.pcolormesh(xx, yy, Z)
 
+
     plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
@@ -342,14 +343,10 @@ def test_weather_data():
     global city, data
     l=[]
     avi_city = []
-    a=0
     with open("../data/temperature.csv") as csvfile:
         r = csv.DictReader(csvfile)
         for line in r:
             l.append(line)
-            if a >10:
-                break
-            a+=1
     for x in l[0]:
         if x in city:
             avi_city.append(x)
@@ -380,5 +377,5 @@ if __name__ == "__main__":
 #    test_performance()
 #    test_SVM()
 #    test_knn()
-#    test_RF()
-    test_weather_data()
+    test_RF()
+#    test_weather_data()
