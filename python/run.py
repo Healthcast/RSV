@@ -117,11 +117,28 @@ def apply_evaluation(clf):
     global paras, X, y
 
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, \
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
                                                         random_state=0)
 
     clf.fit(X_train, y_train)
     r = clf.predict(X_test)
+
+    #plot the results
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1))
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+
+    plt.figure()
+    plt.pcolormesh(xx, yy, Z)
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("binary classification classification")
+    plt.show()
+
 
     if paras['eva'] == 'accuracy':
         print "The accuracy:"
@@ -153,6 +170,19 @@ def apply_evaluation(clf):
 
         
 
+def print_help():
+    print \
+    "Parameters explaination\n" +\
+    "--clf    classifier: svm, knn, rf\n" +\
+    "--eva    evauation method: accuracy, precision, confusion, report, roc\n" +\
+    "--city   city name\n" +\
+    "--svm_C  parameter of svm, control the softmaigin\n" +\
+    "--svm_k  kernel function: linear, poly, rbf, sigmoid\n" +\
+    "--knn_n  the number of neighbors\n"+\
+    "--knn_w  the weight of neighbors: uniform, distance\n" +\
+    "--rf_d   max depth of the tree\n" + \
+    "--rf_n   number of estimators\n" +\
+    "--rf_p   number of good features in each split\n "
 
 def main():
     global paras
@@ -166,6 +196,7 @@ def main():
         sys.exit(2)
     for o, a in opts:
         if o in ("-h", "--help"):
+            print_help()
             sys.exit()
         elif o in ("--clf"):
             paras["clf"] = a
@@ -193,6 +224,7 @@ def main():
 
     pre_process_data("../data/rsv.csv")
     clf = apply_algorithm()
+    
     apply_evaluation(clf)
 
 if __name__ == "__main__":
