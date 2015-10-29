@@ -14,7 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 def apply_algorithm(paras, X, y):
 
     if paras['clf'] == 'svm':
-        clf = svm.SVC(kernel=paras['svm'][1], C=paras['svm'][0])
+        clf = svm.SVC(kernel=paras['svm'][1], C=paras['svm'][0], probability=True)
     elif paras['clf'] == 'knn':
         clf = neighbors.KNeighborsClassifier(paras['knn'][0],\
                                              weights=paras['knn'][1])
@@ -26,10 +26,11 @@ def apply_algorithm(paras, X, y):
         print str("unknown classifier") 
         sys.exit(2)
 
-    return clf
-    
-def apply_evaluation(paras, X, y, clf):
 
+    return clf
+
+    
+def apply_evaluation(paras, X, y, clf, data):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
                                                         random_state=0)
@@ -37,22 +38,68 @@ def apply_evaluation(paras, X, y, clf):
     clf.fit(X_train, y_train)
     r = clf.predict(X_test)
 
-    #plot the results
-    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
-    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
 
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1))
-    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
+    d = clf.decision_function(X)
+    p = clf.predict_proba(X).T[1]*3
+    h = data["hospital"].T[data["city"].index(paras["city"])]
+    h1 = h.astype(float)
+    m = max(h1)
+    h1=h1/m*4
 
     plt.figure()
-    plt.pcolormesh(xx, yy, Z)
-    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
-    plt.xlim(xx.min(), xx.max())
-    plt.ylim(yy.min(), yy.max())
-    plt.title("binary classification classification")
+    plt.plot(d)
+    plt.plot(y)
+    plt.plot(h1)
+    plt.plot(p)
+
+
+#    height = 4
+#    bottom = -2
+#    ss = data["season_start"]
+#    date=data["date1"]
+#    c_id = data["city"].index(paras["city"])
+#    ylabel = data["ylabels"]
+#    for m in ss:
+#        plt.plot([m, m],[bottom, height], 'y--', linewidth=1)
+#
+#    for m in range(1, len(ss)-1):
+#        a = ss[m]
+#        plt.text(a-5,height, date[a].split('-')[0])                        
+#
+    #plot the start week
+#    up=1
+#    for j in range(len(ylabel.T[c_id])-1):
+#        if ylabel.T[c_id,j] == 1 :
+#            plt.plot([j, j],[bottom, height], 'k-', linewidth=2)
+#            if up==1:
+#                plt.text(j-10, height-1, date[j])
+#                up=0
+#            else:
+#                plt.text(j-10, height-2, date[j])
+#                up=1
+#
+
     plt.show()
 
+
+
+
+    #plot the results
+#    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+#    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+#
+#    xx, yy = np.meshgrid(np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1))
+#    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+#    Z = Z.reshape(xx.shape)
+#
+#    plt.figure()
+#    plt.pcolormesh(xx, yy, Z)
+#    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
+#    plt.xlim(xx.min(), xx.max())
+#    plt.ylim(yy.min(), yy.max())
+#    plt.title("binary classification classification")
+#    plt.show()
+#
 
     if paras['eva'] == 'accuracy':
         print "The accuracy:"
