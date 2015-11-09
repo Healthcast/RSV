@@ -30,6 +30,7 @@ def load_hospital_data(data, address):
         if int(d[1]) != 7 and int(d[1]) != 8 and int(d[1]) != 9:
             newl.append(i)
 
+    newl = l
     #insert date data
     for i in newl:
         dates.append(i[''])
@@ -234,11 +235,14 @@ def load_data(paras, data, address):
     m =0
     while m < len(dates):
         a = np.zeros(shape=(len(dates), 1), dtype=np.int)
+        a = a - 1
         a[m]=1
         m+=1
         X = np.concatenate((X, a), axis=1)            
         
 
+
+    print len(X)
     data["X"] = X
     data["y"] = y
 

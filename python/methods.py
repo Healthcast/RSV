@@ -32,7 +32,7 @@ def apply_algorithm(paras, X, y):
     
 def apply_evaluation(paras, X, y, clf, data):
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, \
                                                         random_state=0)
 
     clf.fit(X_train, y_train)
@@ -47,7 +47,7 @@ def apply_evaluation(paras, X, y, clf, data):
     h1=h1/m*4
 
     plt.figure()
-    plt.plot(d)
+#    plt.plot(d)
     plt.plot(y)
     plt.plot(h1)
     plt.plot(p)
@@ -66,7 +66,7 @@ def apply_evaluation(paras, X, y, clf, data):
 #        a = ss[m]
 #        plt.text(a-5,height, date[a].split('-')[0])                        
 #
-    #plot the start week
+#   #plot the start week
 #    up=1
 #    for j in range(len(ylabel.T[c_id])-1):
 #        if ylabel.T[c_id,j] == 1 :
