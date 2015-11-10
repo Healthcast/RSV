@@ -16,6 +16,7 @@ paras={
     "svm":[1, "linear"],
     "knn":[10, "uniform"],
     "rf":[10, 10, 1],
+    "year":2012
 }
 
 
@@ -29,7 +30,7 @@ data={
     "ylabels" : np.zeros(shape=(10,10), dtype=np.int), #y labels for all hospital data
     "y" : np.zeros(shape=(10,1), dtype=np.int), #1:yes. 0:not the start week
     "X" : np.zeros(shape=(10,10), dtype=np.int), 
-    "season_start" : [], #start date of each season
+    "season_start" : [] #start date of each season (October)
 }
 
 
@@ -45,13 +46,13 @@ def print_help():
     "--knn_w  the weight of neighbors: uniform, distance\n" +\
     "--rf_d   max depth of the tree\n" + \
     "--rf_n   number of estimators\n" +\
-    "--rf_p   number of good features in each split\n "
-
+    "--rf_p   number of good features in each split\n" +\
+    "--year   2009~2014\n"
 def main():
     global paras
     long_opts = ["help", "clf=", "city=", "eva=", \
                  "svm_C=", "svm_k=", "knn_n=", "knn_w=", "rf_d=", \
-                 "rf_n=", "rf_p="]
+                 "rf_n=", "rf_p=", "year="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], "h", long_opts)
     except getopt.GetoptError as err:
@@ -81,12 +82,14 @@ def main():
             paras["rf"][1] = int(a)
         elif o in ("--rf_p"):
             paras["rf"][2] = int(a)
+        elif o in ("--year"):
+            paras["year"] = int(a)
         else:
             assert False, "unhandled option"
 
     preprocess.load_data(paras, data,"../data/")
-    clf = methods.apply_algorithm(paras, data['X'], data['y'],)
-    methods.apply_evaluation(paras, data['X'], data['y'], clf, data)
+    clf = methods.apply_algorithm(paras, data)
+    methods.apply_evaluation(paras, clf, data)
 
 if __name__ == "__main__":
     main()

@@ -11,7 +11,9 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 
-def apply_algorithm(paras, X, y):
+def apply_algorithm(paras, data):
+    X = data["X"]
+    y = data["y"]
 
     if paras['clf'] == 'svm':
         clf = svm.SVC(kernel=paras['svm'][1], C=paras['svm'][0], probability=True)
@@ -22,34 +24,33 @@ def apply_algorithm(paras, X, y):
         clf = RandomForestClassifier(max_depth=paras['rf'][0], \
                                      n_estimators=paras['rf'][1],\
                                      max_features=paras['rf'][2])
+    elif paras['clf'] == 'lr':
+        clf = linear_model.LogisticRegression(C=0.5)
     else:
         print str("unknown classifier") 
         sys.exit(2)
-
+    
 
     return clf
 
-    
-def apply_evaluation(paras, X, y, clf, data):
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, \
-                                                        random_state=0)
-
-    clf.fit(X_train, y_train)
-    r = clf.predict(X_test)
 
 
+def plot_results(r, clf, data, paras):
+    X = data["X"]
+    y = data["y"]
+
+    print X
     d = clf.decision_function(X)
-    p = clf.predict_proba(X).T[1]*3
+    p = clf.predict_proba(X).T[1]
     h = data["hospital"].T[data["city"].index(paras["city"])]
     h1 = h.astype(float)
     m = max(h1)
     h1=h1/m*4
 
     plt.figure()
-#    plt.plot(d)
-    plt.plot(y)
-    plt.plot(h1)
+    plt.plot(d)
+    plt.plot((y+1)/2)
+#    plt.plot(h1)
     plt.plot(p)
 
 
@@ -81,9 +82,6 @@ def apply_evaluation(paras, X, y, clf, data):
 
     plt.show()
 
-
-
-
     #plot the results
 #    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
 #    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
@@ -100,6 +98,20 @@ def apply_evaluation(paras, X, y, clf, data):
 #    plt.title("binary classification classification")
 #    plt.show()
 #
+    
+
+    
+def apply_evaluation(paras,  clf, data):
+    X = data["X"]
+    y = data["y"]
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
+                                                        random_state=0)
+
+    clf.fit(X_train, y_train)
+    r = clf.predict(X_test)
+    plot_results(r, clf, data, paras)
+    
 
     if paras['eva'] == 'accuracy':
         print "The accuracy:"

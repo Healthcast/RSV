@@ -24,11 +24,11 @@ def load_hospital_data(data, address):
             l.append(line)
 
     #remove data in August and September
-    newl=[]
-    for i in l:
-        d = i[''].split('-')
-        if int(d[1]) != 7 and int(d[1]) != 8 and int(d[1]) != 9:
-            newl.append(i)
+#    newl=[]
+#    for i in l:
+#        d = i[''].split('-')
+#        if int(d[1]) != 7 and int(d[1]) != 8 and int(d[1]) != 9:
+#            newl.append(i)
 
     newl = l
     #insert date data
@@ -57,8 +57,9 @@ def load_hospital_data(data, address):
             if str(p) == d[0] and d[1] == '10' and start == 0:
                 ss.append(j)
                 start = 1
-    ss = [0] + ss
+#    ss = [0] + ss
     ss = ss + [len(dates)-1]
+    print  [dates[x] for x in ss]
 
     #label and insert the "start week" to ylabel
     for j in range (len(city)):
@@ -76,7 +77,6 @@ def load_hospital_data(data, address):
     data["city"] = city
     data["date1"] = dates
     data["season_start"] = ss
-
 
 
 
@@ -113,8 +113,45 @@ def filter_raw_data(dates, city, address):
 
 
 
+#correct the non_available data (NaN and NA)
+def correct_data(d):
+    (r, c) = d.shape
 
+    for i in d.T:
+        #correct non_available data "-999" at the prefix of vector
+        if int(i[0]) == -999:
+            for j in range(1,r):
+                if int(i[j]) != -999:
+                    i[0:j] = np.zeros(shape=(j), dtype=np.float) + i[j]
+                    break
 
+        #correct non_available data "-999" at the sufffix of vector
+        if int(i[r-1]) == -999:
+            for j in range(r-2, -1, -1):
+                if int(i[j]) != -999:
+                    i[j+1:r] = np.zeros(shape=(r-j-1), dtype=np.float) + i[j]
+                    break
+
+        #correct non_available data "-999" in the middle of vector
+        start=0
+        end=0
+        step_size=0.0
+        step=0
+        for j in range(0,r):
+            if int(i[j]) == -999 and start ==0:
+                    start = j-1
+            if int(i[j]) != -999 and start != 0:
+                end = j
+            if start !=0 and end != 0:
+                step = end - start - 1
+                step_size = float(i[end] - i[start])/step
+                for m in range(start+1, end):
+                    i[m] = i[m-1]+step_size
+                start = 0
+                end = 0
+                step = 0
+                step_size=0
+    return d
 
 
 
@@ -148,13 +185,13 @@ def load_weather_data(data, address):
     for i in range(len(dates)):
         for j in city2:
             if AH[i][j] == "NA" or AH[i][j] == "NaN":
-                AH[i][j] = 0
+                AH[i][j] = -999
             if mAH[i][j] == "NA" or mAH[i][j] == "NaN":
-                mAH[i][j] = 0
+                mAH[i][j] = -999
             if mT[i][j] == "NA" or mT[i][j] == "NaN":
-                mT[i][j] = 0
+                mT[i][j] = -999
             if T[i][j] == "NA" or T[i][j] == "NaN":
-                T[i][j] = 0
+                T[i][j] = -999
 
 
 
@@ -175,6 +212,12 @@ def load_weather_data(data, address):
         mt[i] = [float(mT[i][x]) for x in city2]
         t[i] = [float(T[i][x]) for x in city2]
 
+
+    #correct the non-available data
+    ah = correct_data(ah)
+    mah = correct_data(mah)
+    mt = correct_data(mt)
+    t = correct_data(t)
 
     data["city2"] = city2
     data["weather"]["ah"] = ah
@@ -199,47 +242,63 @@ def load_data(paras, data, address):
     #load all datasets
     load_hospital_data(data, address)
     load_weather_data(data, address)
-
-    #retrieve X and y
-    X = np.zeros(shape=(len(data["date1"]), 4), dtype=np.float)
-    y = np.zeros(shape=(len(data["date1"]), 1), dtype=np.int)
-
-    print set(data["city2"]) & set(data["city"])
-    weather_id = data["city2"].index(paras['city'])
-    rsv_id = data["city"].index(paras['city'])
-
-    X[:,0] = data["weather"]["ah"].T[rsv_id]
-    X[:,1] = data["weather"]["mah"].T[rsv_id]
-    X[:,2] = data["weather"]["mt"].T[rsv_id]
-    X[:,3] = data["weather"]["t"].T[rsv_id]
-
-    y = data["ylabels"].T[rsv_id].copy()
-
-
-    #-----+----- => -----++++++
     c = data["city"]
+    c2 = data["city2"]
     dates = data["date1"]
     ss = data["season_start"]
-    for m in range(len(ss)-1):
+    year = paras["year"]
+
+    #retrieve X and y
+    print set(c2) & set(c)
+    weather_id = c2.index(paras['city'])
+    rsv_id = c.index(paras['city'])
+
+
+    #filter data given specific year
+    start = 0
+    end =0
+    for i in range (len(dates)):
+        d = dates[i].split('-')
+        if int(d[0]) == year and d[1] == "08" and start == 0:
+            start = i
+        if int(d[0]) == year+1 and d[1] == "02" and end == 0:
+            end = i
+    X = np.zeros(shape=(end-start, 4), dtype=np.float)
+    y = np.zeros(shape=(end-start, 1), dtype=np.int)
+
+    X[:,0] = data["weather"]["ah"][start:end, rsv_id].copy()
+    X[:,1] = data["weather"]["mah"][start:end, rsv_id].copy()
+    X[:,2] = data["weather"]["mt"][ start:end, rsv_id].copy()
+    X[:,3] = data["weather"]["t"][start:end, rsv_id,].copy()
+
+    y = data["ylabels"][start:end, rsv_id].copy()
+
+
+    #-----+----- => -----++++++ solving unblanced data
+    for m in y:
         had_one=0
-        for i in range(ss[m], ss[m+1]-1):
-            if y[i] == 1:
+        for i in range (len(y)):
+            if y[i] == 1 and had_one ==0:
                 had_one=1
             if had_one == 1:
                 y[i] = 1
+    print y
 
-    
     y = y*2-1    # 111000 => 111-1-1-1
 
-    #per week one feature
-    m =0
-    while m < len(dates):
-        a = np.zeros(shape=(len(dates), 1), dtype=np.int)
-        a = a - 1
-        a[m]=1
-        m+=1
-        X = np.concatenate((X, a), axis=1)            
-        
+    ########################
+    #per week one feature  --> solving time series
+    #This approach doesnot work since: one point one dimension,  
+    #there will be a clear hyperplane that almost determined by date info
+    ########################
+#    m =0
+#    while m < len(dates):
+#        a = np.zeros(shape=(len(dates), 1), dtype=np.int)
+#        a = a - 1
+#        a[m]=1
+#        m+=1
+#        X = np.concatenate((X, a), axis=1)            
+#        
 
 
     print len(X)
