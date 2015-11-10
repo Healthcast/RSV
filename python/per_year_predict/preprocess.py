@@ -89,21 +89,30 @@ def load_hospital_data(data, address):
 
 
     
-#filter weather data by date and city
-def filter_raw_data(dates, city, address):
+#filter all daye based data according to the "date" of hospital data
+#......w1......w2......w3
+#1234567 1234567 1234567
+#calculate weekly weather data by accounting the prior 7 days weather data 
+def filter_raw_data(dates,  address):
 
     l=[]
     with open(address) as csvfile:
         r = csv.DictReader(csvfile)
         for line in r:
             l.append(line)
-    newl = [x for x in l if x['date'] in dates]
 
-    if len(newl) != len(dates):
-        print "rsv data can not match to the weather data by date"
+    newl=[]
+    for x in range(len(l)):
+        if l[x]['date'] in dates:
+           newl.append(l[x]) 
+           newl.append(l[x-1]) 
+           newl.append(l[x-2]) 
+           newl.append(l[x-3]) 
+           newl.append(l[x-4]) 
+           newl.append(l[x-5]) 
+           newl.append(l[x-6]) 
+            
 
-    #filter data by city
-#    print (set(newl[0].keys()) & set(city))
 
     return newl
 
@@ -162,10 +171,10 @@ def load_weather_data(data, address):
     dates = data["date1"]
 
 
-    AH = filter_raw_data(data["date1"], data["city"], address+"AbsHumidity.csv")
-    mAH = filter_raw_data(data["date1"], data["city"], address+"meanAbsHumidity.csv")
-    mT = filter_raw_data(data["date1"], data["city"], address+"meanTemperature.csv")
-    T = filter_raw_data(data["date1"], data["city"], address+"temperature.csv")
+    AH = filter_raw_data(data["date1"], address+"AbsHumidity.csv")
+    mAH = filter_raw_data(data["date1"], address+"meanAbsHumidity.csv")
+    mT = filter_raw_data(data["date1"], address+"meanTemperature.csv")
+    T = filter_raw_data(data["date1"], address+"temperature.csv")
     
 
     # calculate the min city set that all data-set share
@@ -173,6 +182,7 @@ def load_weather_data(data, address):
             & set(T[0].keys())
     city2.remove("date")
     city2 = list(city2)
+
 #    for i in range(len(dates)):
 #        city2 = city2 & set(AH[i].keys()) & set(mAH[i].keys()) \
 #                & set(mT[i].keys()) & set(T[i].keys())
@@ -182,7 +192,8 @@ def load_weather_data(data, address):
 
 
     #remove "NA" from data
-    for i in range(len(dates)):
+    r = len(AH)
+    for i in range(r):
         for j in city2:
             if AH[i][j] == "NA" or AH[i][j] == "NaN":
                 AH[i][j] = -999
@@ -199,31 +210,49 @@ def load_weather_data(data, address):
     #mah --> meanAbsHumidity
     #mt --> meanTemperature
     #t -- > temperature
-    ah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    mah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    mt = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    t = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    ah = np.zeros(shape=(r, len(city2)), dtype=np.float)
+    mah = np.zeros(shape=(r, len(city2)), dtype=np.float)
+    mt = np.zeros(shape=(r, len(city2)), dtype=np.float)
+    t = np.zeros(shape=(r, len(city2)), dtype=np.float)
 
 
-    #insert hospital data
-    for i in range(len(dates)):
+    #insert weather data
+    for i in range(r):
         ah[i] = [float(AH[i][x]) for x in city2]
         mah[i] = [float(mAH[i][x]) for x in city2]
         mt[i] = [float(mT[i][x]) for x in city2]
         t[i] = [float(T[i][x]) for x in city2]
 
+    print r
+    print len(dates)
 
-    #correct the non-available data
+    
+    #correct the non-available data, note by "-999"
     ah = correct_data(ah)
     mah = correct_data(mah)
     mt = correct_data(mt)
     t = correct_data(t)
 
+    #contruct the final structure for weather data
+    n_ah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    n_mah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    n_mt = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    n_t = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    
+    #calculate week based weather data (average days data)
+    i=0
+    for i in range(len(dates)):
+        n_ah[i] = sum(ah[i*7:i*7+7])/7
+        n_mah[i] = sum(mah[i*7:i*7+7])/7
+        n_mt[i] = sum(mt[i*7:i*7+7])/7
+        n_t[i] = sum(t[i*7:i*7+7])/7
+        i += 7
+    
     data["city2"] = city2
-    data["weather"]["ah"] = ah
-    data["weather"]["mah"] = mah
-    data["weather"]["mt"] = mt
-    data["weather"]["t"] = t
+    data["weather"]["ah"] = n_ah
+    data["weather"]["mah"] = n_mah
+    data["weather"]["mt"] = n_mt
+    data["weather"]["t"] = n_t
 
 
 

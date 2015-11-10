@@ -39,7 +39,6 @@ def plot_results(r, clf, data, paras):
     X = data["X"]
     y = data["y"]
 
-    print X
     d = clf.decision_function(X)
     p = clf.predict_proba(X).T[1]
     h = data["hospital"].T[data["city"].index(paras["city"])]
