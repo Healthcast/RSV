@@ -8,6 +8,9 @@ from sklearn import svm
 from sklearn import metrics
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.decomposition import PCA
+
 
 
 
@@ -46,11 +49,51 @@ def plot_results(r, clf, data, paras):
     m = max(h1)
     h1=h1/m*4
 
-    plt.figure()
-    plt.plot(d)
-    plt.plot((y+1)/2)
+    plt.figure(1)
+#    pd = plt.plot(d, label="distance")
+    plt.plot(y, label="y")
 #    plt.plot(h1)
-    plt.plot(p)
+    plt.plot((p-0.5)*2, label="probability")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+    plt.figure(2, figsize=(8, 6))
+    plt.clf()
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
+    plt.xlabel(' AbsHumidity')
+    plt.ylabel('meanAbsHumidity')
+    plt.xticks(())
+    plt.yticks(())
+
+
+    plt.figure(3, figsize=(8, 6))
+    plt.clf()
+    plt.scatter(X[:, 0], X[:, 3], c=y, cmap=plt.cm.Paired)
+    plt.xlabel('AbsHumidity')
+    plt.ylabel('temperature')
+    plt.xticks(())
+    plt.yticks(())
+    
+    plt.figure(4, figsize=(8, 6))
+    plt.clf()
+    plt.scatter(X[:, 1], X[:, 2], c=y, cmap=plt.cm.Paired)
+    plt.xlabel('meanAbsHumidity')
+    plt.ylabel('meanTemperature')
+    plt.xticks(())
+    plt.yticks(())
+    
+    fig = plt.figure(5, figsize=(8, 6))
+    ax = Axes3D(fig, elev=-150, azim=110)
+    X_reduced = PCA(n_components=3).fit_transform(X)
+    ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=y, cmap=plt.cm.Paired)
+    ax.set_title("First three PCA directions")
+    ax.set_xlabel("1st eigenvector")
+    ax.w_xaxis.set_ticklabels([])
+    ax.set_ylabel("2nd eigenvector")
+    ax.w_yaxis.set_ticklabels([])
+    ax.set_zlabel("3rd eigenvector")
+    ax.w_zaxis.set_ticklabels([])
+
+    plt.show()
 
 
 #    height = 4
@@ -79,7 +122,10 @@ def plot_results(r, clf, data, paras):
 #                up=1
 #
 
-    plt.show()
+
+
+
+
 
     #plot the results
 #    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
