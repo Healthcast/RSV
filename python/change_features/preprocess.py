@@ -104,15 +104,8 @@ def filter_raw_data(dates,  address):
     newl=[]
     for x in range(len(l)):
         if l[x]['date'] in dates:
-           newl.append(l[x]) 
-           newl.append(l[x-1]) 
-           newl.append(l[x-2]) 
-           newl.append(l[x-3]) 
-           newl.append(l[x-4]) 
-           newl.append(l[x-5]) 
-           newl.append(l[x-6]) 
-            
-
+            for i in range(21):
+               newl.append(l[x-20+i]) 
 
     return newl
 
@@ -170,16 +163,15 @@ def load_weather_data(data, address):
     city2=[]
     dates = data["date1"]
 
-
+    #refine weather data by "dates" in hospital data
+    #AH --> AbsHumidity
+    #T -- > temperature
     AH = filter_raw_data(data["date1"], address+"AbsHumidity.csv")
-    mAH = filter_raw_data(data["date1"], address+"meanAbsHumidity.csv")
-    mT = filter_raw_data(data["date1"], address+"meanTemperature.csv")
     T = filter_raw_data(data["date1"], address+"temperature.csv")
     
 
     # calculate the min city set that all data-set share
-    city2 = set(AH[0].keys()) & set(mAH[0].keys()) & set(mT[0].keys()) \
-            & set(T[0].keys())
+    city2 = set(AH[0].keys()) & set(T[0].keys())
     city2.remove("date")
     city2 = list(city2)
 
@@ -191,68 +183,65 @@ def load_weather_data(data, address):
 
 
 
-    #remove "NA" from data
+    #remove "NA" from the refined data
     r = len(AH)
     for i in range(r):
         for j in city2:
             if AH[i][j] == "NA" or AH[i][j] == "NaN":
                 AH[i][j] = -999
-            if mAH[i][j] == "NA" or mAH[i][j] == "NaN":
-                mAH[i][j] = -999
-            if mT[i][j] == "NA" or mT[i][j] == "NaN":
-                mT[i][j] = -999
             if T[i][j] == "NA" or T[i][j] == "NaN":
                 T[i][j] = -999
 
 
 
-    #AH --> AbsHumidity
-    #mah --> meanAbsHumidity
-    #mt --> meanTemperature
-    #t -- > temperature
+    #initialize the matrix for the refined data
     ah = np.zeros(shape=(r, len(city2)), dtype=np.float)
-    mah = np.zeros(shape=(r, len(city2)), dtype=np.float)
-    mt = np.zeros(shape=(r, len(city2)), dtype=np.float)
     t = np.zeros(shape=(r, len(city2)), dtype=np.float)
 
 
-    #insert weather data
+    #insert weather data into matrix
     for i in range(r):
         ah[i] = [float(AH[i][x]) for x in city2]
-        mah[i] = [float(mAH[i][x]) for x in city2]
-        mt[i] = [float(mT[i][x]) for x in city2]
         t[i] = [float(T[i][x]) for x in city2]
 
-    print r
-    print len(dates)
-
-    
     #correct the non-available data, note by "-999"
     ah = correct_data(ah)
-    mah = correct_data(mah)
-    mt = correct_data(mt)
     t = correct_data(t)
 
-    #contruct the final structure for weather data
-    n_ah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    n_mah = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    n_mt = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    n_t = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    
+    #compact the weather(humidity and temperature) data into 6 features
+    ah1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    ah2 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    ah3 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    t1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    t2 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+    t3 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+
+
     #calculate week based weather data (average days data)
     i=0
     for i in range(len(dates)):
-        n_ah[i] = sum(ah[i*7:i*7+7])/7
-        n_mah[i] = sum(mah[i*7:i*7+7])/7
-        n_mt[i] = sum(mt[i*7:i*7+7])/7
-        n_t[i] = sum(t[i*7:i*7+7])/7
+        ah1[i] = sum(ah[i*7:i*7+7])/7
+        t1[i] = sum(t[i*7:i*7+7])/7
         i += 7
+
+    for i in range(len(dates)):
+        ah2[i] = sum(ah[i*14:i*14+14])/14
+        t2[i] = sum(t[i*14:i*14+14])/14
+        i += 14
+
+    for i in range(len(dates)):
+        ah3[i] = sum(ah[i*21:i*21+21])/21
+        t3[i] = sum(t[i*21:i*21+21])/21
+        i += 21
+
     
     data["city2"] = city2
-    data["weather"]["ah"] = n_ah
-    data["weather"]["mah"] = n_mah
-    data["weather"]["mt"] = n_mt
-    data["weather"]["t"] = n_t
+    data["weather"].append(ah1)
+    data["weather"].append(ah2)
+    data["weather"].append(ah3)
+    data["weather"].append(t1)
+    data["weather"].append(t2)
+    data["weather"].append(t3)
 
 
 
@@ -294,13 +283,11 @@ def load_data(paras, data, address):
             start = i
         if int(d[0]) == year+1 and d[1] == "02" and end == 0:
             end = i
-    X = np.zeros(shape=(end-start, 4), dtype=np.float)
+    X = np.zeros(shape=(end-start, 6), dtype=np.float)
     y = np.zeros(shape=(end-start, 1), dtype=np.int)
 
-    X[:,0] = data["weather"]["ah"][start:end, rsv_id].copy()
-    X[:,1] = data["weather"]["mah"][start:end, rsv_id].copy()
-    X[:,2] = data["weather"]["mt"][ start:end, rsv_id].copy()
-    X[:,3] = data["weather"]["t"][start:end, rsv_id,].copy()
+    for i in range(6):
+        X[:,i] = data["weather"][i][start:end, rsv_id].copy()
 
     y = data["ylabels"][start:end, rsv_id].copy()
 

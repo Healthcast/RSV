@@ -26,7 +26,7 @@ data={
     "city" :  [], #all cities' name in rsv data
     "city2": [], #all cities' name in weather data
     "hospital" : np.zeros(shape=(10,10), dtype=np.int), #hospital data
-    "weather" : {}, #weather data
+    "weather" : [], #weather data
     "ylabels" : np.zeros(shape=(10,10), dtype=np.int), #y labels for all hospital data
     "y" : np.zeros(shape=(10,1), dtype=np.int), #1:yes. 0:not the start week
     "X" : np.zeros(shape=(10,10), dtype=np.int), 

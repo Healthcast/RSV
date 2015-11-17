@@ -58,29 +58,37 @@ def plot_results(r, clf, data, paras):
 
     plt.figure(2, figsize=(8, 6))
     plt.clf()
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
-    plt.xlabel(' AbsHumidity')
-    plt.ylabel('meanAbsHumidity')
+    plt.scatter(X[:, 0], X[:, 3], c=y, cmap=plt.cm.Paired)
+    plt.xlabel('ah1')
+    plt.ylabel('t1')
     plt.xticks(())
     plt.yticks(())
 
 
     plt.figure(3, figsize=(8, 6))
     plt.clf()
-    plt.scatter(X[:, 0], X[:, 3], c=y, cmap=plt.cm.Paired)
-    plt.xlabel('AbsHumidity')
-    plt.ylabel('temperature')
+    plt.scatter(X[:, 1], X[:, 4], c=y, cmap=plt.cm.Paired)
+    plt.xlabel('ah2')
+    plt.ylabel('t2')
     plt.xticks(())
     plt.yticks(())
     
     plt.figure(4, figsize=(8, 6))
     plt.clf()
-    plt.scatter(X[:, 1], X[:, 2], c=y, cmap=plt.cm.Paired)
-    plt.xlabel('meanAbsHumidity')
-    plt.ylabel('meanTemperature')
+    plt.scatter(X[:, 2], X[:, 5], c=y, cmap=plt.cm.Paired)
+    plt.xlabel('ah3')
+    plt.ylabel('t3')
     plt.xticks(())
     plt.yticks(())
     
+
+    plt.figure(6, figsize=(8, 6))
+    plt.plot(X[:,0], label="ah1")
+    plt.plot(X[:,1], label="ah2")
+    plt.plot(X[:,2], label="ah3")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+
     fig = plt.figure(5, figsize=(8, 6))
     ax = Axes3D(fig, elev=-150, azim=110)
     X_reduced = PCA(n_components=3).fit_transform(X)
@@ -149,13 +157,13 @@ def plot_results(r, clf, data, paras):
 def apply_evaluation(paras,  clf, data):
     X = data["X"]
     y = data["y"]
-    
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
                                                         random_state=0)
 
     clf.fit(X_train, y_train)
     r = clf.predict(X_test)
-    plot_results(r, clf, data, paras)
+#    plot_results(r, clf, data, paras)
     
 
     if paras['eva'] == 'accuracy':
@@ -173,7 +181,7 @@ def apply_evaluation(paras,  clf, data):
     elif paras['eva'] == 'report':
         print "The report:"
         print metrics.classification_report(y_test, r)
-    elif paras['eva'] == 'roc' and paras['clf'] == 'svm':
+    elif paras['eva'] == 'roc':
         scores = clf.decision_function(X_test)
         print "The auc:"
         fpr, tpr, thresholds = metrics.roc_curve(y_test, scores)
