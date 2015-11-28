@@ -13,7 +13,7 @@ def load_hospital_data(data, address):
     dates = []
     hos = np.zeros(shape=(10,10), dtype=np.int)
     ys = np.zeros(shape=(10,10), dtype=np.int)
-    city = []
+    city1 = []
     ss = []
 
     
@@ -37,17 +37,17 @@ def load_hospital_data(data, address):
         del i['']
 
     #load city names
-    city = newl[0].keys()
+    city1 = newl[0].keys()
 
 
     #init ylabel and date 
-    hos = np.zeros(shape=(len(dates), len(city)), dtype=np.int)
-    ys = np.zeros(shape=(len(dates), len(city)), dtype=np.int)
+    hos = np.zeros(shape=(len(dates), len(city1)), dtype=np.int)
+    ys = np.zeros(shape=(len(dates), len(city1)), dtype=np.int)
 
 
     #insert hospital data
     for i in range(len(newl)):
-        hos[i] = [newl[i][x] for x in city]
+        hos[i] = [newl[i][x] for x in city1]
 
     #determine the start week of each season: Octorber 01
     for p in range(2009, 2016):
@@ -59,10 +59,9 @@ def load_hospital_data(data, address):
                 start = 1
 #    ss = [0] + ss
     ss = ss + [len(dates)-1]
-    print  [dates[x] for x in ss]
 
     #label and insert the "start week" to ylabel
-    for j in range (len(city)):
+    for j in range (len(city1)):
         for m in range(len(ss)-1):
             had_one=0
             for i in range(ss[m], ss[m+1]-1):
@@ -74,8 +73,8 @@ def load_hospital_data(data, address):
 
     data["hospital"] = hos
     data["ylabels"] = ys
-    data["city"] = city
-    data["date1"] = dates
+    data["city1"] = city1
+    data["dates"] = dates
     data["season_start"] = ss
 
 
@@ -104,7 +103,7 @@ def filter_raw_data(dates,  address):
     newl=[]
     for x in range(len(l)):
         if l[x]['date'] in dates:
-            for i in range(21):
+            for i in range(91):
                newl.append(l[x-20+i]) 
 
     return newl
@@ -161,13 +160,14 @@ def correct_data(d):
 def load_weather_data(data, address):
     weather={}
     city2=[]
-    dates = data["date1"]
+    dates = data["dates"]
+    lnd = data["LND"]
 
     #refine weather data by "dates" in hospital data
     #AH --> AbsHumidity
     #T -- > temperature
-    AH = filter_raw_data(data["date1"], address+"AbsHumidity.csv")
-    T = filter_raw_data(data["date1"], address+"temperature.csv")
+    AH = filter_raw_data(data["dates"], address+"AbsHumidity.csv")
+    T = filter_raw_data(data["dates"], address+"temperature.csv")
     
 
     # calculate the min city set that all data-set share
@@ -209,44 +209,75 @@ def load_weather_data(data, address):
     t = correct_data(t)
 
     #compact the weather(humidity and temperature) data into 6 features
-    ah1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    ah2 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    ah3 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    t1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    t2 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-    t3 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
-
-
     #calculate week based weather data (average days data)
-    i=0
-    for i in range(len(dates)):
-        ah1[i] = sum(ah[i*7:i*7+7])/7
-        t1[i] = sum(t[i*7:i*7+7])/7
-        i += 7
 
-    for i in range(len(dates)):
-        ah2[i] = sum(ah[i*14:i*14+14])/14
-        t2[i] = sum(t[i*14:i*14+14])/14
-        i += 14
 
-    for i in range(len(dates)):
-        ah3[i] = sum(ah[i*21:i*21+21])/21
-        t3[i] = sum(t[i*21:i*21+21])/21
-        i += 21
+    for j in range(lnd/7):
+        ah1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+        t1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
+        for i in range(len(dates)):
+            ah1[i, :] = sum(ah[((i+1)*lnd-7*(j+1)):(i+1)*lnd, :])/(7*(j+1))
+            t1[i, :] = sum(t[((i+1)*lnd-7*(j+1)):(i+1)*lnd, :])/(7*(j+1))
+        data["weather"].append(ah1)
+        data["weather"].append(t1)
 
-    
     data["city2"] = city2
-    data["weather"].append(ah1)
-    data["weather"].append(ah2)
-    data["weather"].append(ah3)
-    data["weather"].append(t1)
-    data["weather"].append(t2)
-    data["weather"].append(t3)
+    
+
+
+
+
+#temperary function for testing all years' model at once time
+#@rsv_id: city id in rsv table
+#@weather_id: city id in weather table
+def store_allXy(data, rsv_id, weather_id):
+    dates = data["dates"]
+    lnd = data["LND"]
+    aXy={}
+    #filter data given specific year
+    for year in range(2009, 2015):
+        start = 0
+        end =0
+        for i in range (len(dates)):
+            d = dates[i].split('-')
+            if int(d[0]) == year and d[1] == "08" and start == 0:
+                start = i
+            if int(d[0]) == year+1 and d[1] == "02" and end == 0:
+                end = i
+        X = np.zeros(shape=(end-start, lnd/7*2), dtype=np.float)
+        y = np.zeros(shape=(end-start, 1), dtype=np.int)
+
+
+        for i in range(lnd/7*2):
+            X[:,i] = data["weather"][i][start:end, weather_id].copy()
+        y = data["ylabels"][start:end, rsv_id].copy()
+
+
+        #-----+----- => -----++++++ solving unblanced data
+        for m in y:
+            had_one=0
+            for i in range (len(y)):
+                if y[i] == 1 and had_one ==0:
+                    had_one=1
+                if had_one == 1:
+                    y[i] = 1
+        y = y*2-1    # 111000 => 111-1-1-1
+        aXy[year] = [X,y]
+    return aXy
+    
+    
 
 
 
 
 
+#def remove_features(X, aXy):
+#    deleted = range(NP/7*2)
+#    X=np.delete(X, [1,2,4,5] ,1)
+#    for year in range(2009, 2015):
+#        aXy[year][0] = np.delete(aXy[year][0], [1,2,4,5] ,1)
+#    return [X, aXy]
+#
 
 
 
@@ -262,47 +293,34 @@ def load_data(paras, data, address):
     load_weather_data(data, address)
 
 
-    c = data["city"]
-    c2 = data["city2"]
-    dates = data["date1"]
-    ss = data["season_start"]
+    city1 = data["city1"]
+    city2 = data["city2"]
+    allXy = data["allXy"]
     year = paras["year"]
 
+
     #retrieve X and y
-    print set(c2) & set(c)
-    weather_id = c2.index(paras['city'])
-    rsv_id = c.index(paras['city'])
+    print set(city2) & set(city1)
+    weather_id = city2.index(paras['city'])
+    rsv_id = city1.index(paras['city'])
+
+    aXy = store_allXy(data, rsv_id, weather_id)
+
+    X = aXy[year][0]
+    y = aXy[year][1]
 
 
-    #filter data given specific year
-    start = 0
-    end =0
-    for i in range (len(dates)):
-        d = dates[i].split('-')
-        if int(d[0]) == year and d[1] == "08" and start == 0:
-            start = i
-        if int(d[0]) == year+1 and d[1] == "02" and end == 0:
-            end = i
-    X = np.zeros(shape=(end-start, 6), dtype=np.float)
-    y = np.zeros(shape=(end-start, 1), dtype=np.int)
-
-    for i in range(6):
-        X[:,i] = data["weather"][i][start:end, rsv_id].copy()
-
-    y = data["ylabels"][start:end, rsv_id].copy()
 
 
-    #-----+----- => -----++++++ solving unblanced data
-    for m in y:
-        had_one=0
-        for i in range (len(y)):
-            if y[i] == 1 and had_one ==0:
-                had_one=1
-            if had_one == 1:
-                y[i] = 1
-    print y
+#    [X, aXy] = remove_features(X, aXy)
+    data["X"] = X
+    data["y"] = y
+    data["allXy"] = aXy
 
-    y = y*2-1    # 111000 => 111-1-1-1
+
+
+
+
 
     ########################
     #per week one feature  --> solving time series
@@ -317,9 +335,3 @@ def load_data(paras, data, address):
 #        m+=1
 #        X = np.concatenate((X, a), axis=1)            
 #        
-
-
-    print len(X)
-    data["X"] = X
-    data["y"] = y
-

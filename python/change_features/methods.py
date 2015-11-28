@@ -13,7 +13,6 @@ from sklearn.decomposition import PCA
 
 
 
-
 def apply_algorithm(paras, data):
     X = data["X"]
     y = data["y"]
@@ -44,7 +43,7 @@ def plot_results(r, clf, data, paras):
 
     d = clf.decision_function(X)
     p = clf.predict_proba(X).T[1]
-    h = data["hospital"].T[data["city"].index(paras["city"])]
+    h = data["hospital"].T[data["city1"].index(paras["city"])]
     h1 = h.astype(float)
     m = max(h1)
     h1=h1/m*4
@@ -61,8 +60,7 @@ def plot_results(r, clf, data, paras):
     plt.scatter(X[:, 0], X[:, 3], c=y, cmap=plt.cm.Paired)
     plt.xlabel('ah1')
     plt.ylabel('t1')
-    plt.xticks(())
-    plt.yticks(())
+
 
 
     plt.figure(3, figsize=(8, 6))
@@ -70,16 +68,14 @@ def plot_results(r, clf, data, paras):
     plt.scatter(X[:, 1], X[:, 4], c=y, cmap=plt.cm.Paired)
     plt.xlabel('ah2')
     plt.ylabel('t2')
-    plt.xticks(())
-    plt.yticks(())
+
     
     plt.figure(4, figsize=(8, 6))
     plt.clf()
     plt.scatter(X[:, 2], X[:, 5], c=y, cmap=plt.cm.Paired)
     plt.xlabel('ah3')
     plt.ylabel('t3')
-    plt.xticks(())
-    plt.yticks(())
+
     
 
     plt.figure(6, figsize=(8, 6))
@@ -104,59 +100,69 @@ def plot_results(r, clf, data, paras):
     plt.show()
 
 
-#    height = 4
-#    bottom = -2
-#    ss = data["season_start"]
-#    date=data["date1"]
-#    c_id = data["city"].index(paras["city"])
-#    ylabel = data["ylabels"]
-#    for m in ss:
-#        plt.plot([m, m],[bottom, height], 'y--', linewidth=1)
-#
-#    for m in range(1, len(ss)-1):
-#        a = ss[m]
-#        plt.text(a-5,height, date[a].split('-')[0])                        
-#
-#   #plot the start week
-#    up=1
-#    for j in range(len(ylabel.T[c_id])-1):
-#        if ylabel.T[c_id,j] == 1 :
-#            plt.plot([j, j],[bottom, height], 'k-', linewidth=2)
-#            if up==1:
-#                plt.text(j-10, height-1, date[j])
-#                up=0
-#            else:
-#                plt.text(j-10, height-2, date[j])
-#                up=1
-#
-
-
-
-
-
-
-    #plot the results
-#    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
-#    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
-#
-#    xx, yy = np.meshgrid(np.arange(x_min, x_max, 1), np.arange(y_min, y_max, 1))
-#    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-#    Z = Z.reshape(xx.shape)
-#
-#    plt.figure()
-#    plt.pcolormesh(xx, yy, Z)
-#    plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
-#    plt.xlim(xx.min(), xx.max())
-#    plt.ylim(yy.min(), yy.max())
-#    plt.title("binary classification classification")
-#    plt.show()
-#
     
+
+
+def testAllXyModel(data):
+    X = data["X"]
+    y = data["y"]
+    aXy = data["allXy"]
+    lnd = data["LND"]
+    p=12
+    accus = []
+
+
+    xs = np.hsplit(X,X.shape[1]/2)
+    print len(xs)
+    clfs=[]
+    for i in range(lnd/7):
+        clf = linear_model.LogisticRegression(C=0.5)
+        clf.fit(xs[i],y)
+        clfs.append(clf)
+
+    for i in range(len(clfs)):
+        s=[]
+        for year in range(2009, 2015):
+            x =aXy[year][0]
+            xx = np.hsplit(x,x.shape[1]/2)
+            yy =aXy[year][1]
+            print "The year: " + str(year)
+            if (yy == 1).all() or (yy == -1).all():
+                print "only one class"
+            else:
+                r = clfs[i].predict(xx[i])
+                print "Accuracy:"
+                s.append(metrics.accuracy_score(yy, r))
+                print metrics.accuracy_score(yy, r)
+        print "average accuracy"
+        accus.append(sum(s)/len(s))
+    print accus
+    
+    for i in range(lnd/7):
+        plt.figure(year-2008, figsize=(24, 18))
+        for year in range(2009, 2015):
+            xx =aXy[year][0]
+            yy =aXy[year][1]
+            if (yy == 1).all() or (yy == -1).all():
+                print "only one class"
+            else:
+                plt.plot(xx[:,i*2], label=str(year))
+                first1 = np.where(yy>0)[0][0]
+                plt.plot(first1, xx[:,i*2][first1], 'rD')
+
+        plt.ylabel('ah on average of ' + str((i+1)*7))
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.savefig("./image3/"+str((i+1)*7)+".png")
+        plt.close()
+        
 
     
 def apply_evaluation(paras,  clf, data):
+
     X = data["X"]
     y = data["y"]
+
+    testAllXyModel(data)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
                                                         random_state=0)
@@ -164,7 +170,7 @@ def apply_evaluation(paras,  clf, data):
     clf.fit(X_train, y_train)
     r = clf.predict(X_test)
 #    plot_results(r, clf, data, paras)
-    
+
 
     if paras['eva'] == 'accuracy':
         print "The accuracy:"
