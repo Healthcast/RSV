@@ -22,6 +22,7 @@ paras={
 
 data={
     "dates" : [], #date list for hospital data
+    "date_index": [], # dates index for weather data
     "city1" :  [], #all cities' name in rsv data
     "city2": [], #all cities' name in weather data
     "hospital" : np.zeros(shape=(10,10), dtype=np.int), #hospital data
@@ -31,7 +32,8 @@ data={
     "X" : np.zeros(shape=(10,10), dtype=np.int), 
     "season_start" : [], #start date of each season (October)
     "allXy" : {}, # store X and y for all years given all cities
-    "LND": 91 # Largest Dumber of Days as features 7, 14, 21
+    "LND": 210, # Largest Dumber of Days before "date" in hospital data 7, 14, 21
+    "jcity" : [] # joint citys between city1 and city2
 }
 
 
@@ -87,10 +89,17 @@ def main():
             paras["year"] = int(a)
         else:
             assert False, "unhandled option"
+            
+    jcity = ['Weiden', 'Mainz', 'Hannover', 'Wurzburg', 'Ulm', 'Dusseldorf',\
+    'Tubingen', 'Koln', 'Berlin', 'Munchen', 'Bonn', 'Hamburg', 'Freiburg',\
+    'Essen', 'Regensburg']
+    data["jcity"] = jcity
+
 
     preprocess.load_data(paras, data,"../data/")
     clf = methods.apply_algorithm(paras, data)
     methods.apply_evaluation(paras, clf, data)
+    methods.testAllXyModel(paras, data)
 
 if __name__ == "__main__":
     main()

@@ -103,57 +103,136 @@ def plot_results(r, clf, data, paras):
     
 
 
-def testAllXyModel(data):
+def testAllXyModel(paras, data):
     X = data["X"]
     y = data["y"]
     aXy = data["allXy"]
     lnd = data["LND"]
-    p=12
-    accus = []
+    jc = data["jcity"]
+    ucity = paras["city"]
+    uyear = paras["year"]
+
+#    for i in range(lnd/7):
+#        plt.figure(i, figsize=(24, 18))
+#        for year in range(2009, 2015):
+#            xx =aXy[ucity][year][0]
+#            yy =aXy[ucity][year][1]
+#            if (yy == 1).all() or (yy == -1).all():
+#                print "only one class"
+#            else:
+#                plt.plot(xx[:,i*2], label=str(year))
+#                first1 = np.where(yy>0)[0][0]
+#                plt.plot(first1, xx[:,i*2][first1], 'rD')
+#
+#        plt.ylabel('ah on average of ' + str((i+1)*7))
+#        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+#        plt.savefig("./image3/"+str((i+1)*7)+".png")
+#        plt.close()
+
 
 
     xs = np.hsplit(X,X.shape[1]/2)
-    print len(xs)
     clfs=[]
     for i in range(lnd/7):
         clf = linear_model.LogisticRegression(C=0.5)
         clf.fit(xs[i],y)
         clfs.append(clf)
 
+    accus = []
+    accStd=[]
     for i in range(len(clfs)):
         s=[]
         for year in range(2009, 2015):
-            x =aXy[year][0]
+            x =aXy[ucity][year][0]
             xx = np.hsplit(x,x.shape[1]/2)
-            yy =aXy[year][1]
-            print "The year: " + str(year)
-            if (yy == 1).all() or (yy == -1).all():
-                print "only one class"
-            else:
-                r = clfs[i].predict(xx[i])
-                print "Accuracy:"
-                s.append(metrics.accuracy_score(yy, r))
-                print metrics.accuracy_score(yy, r)
-        print "average accuracy"
-        accus.append(sum(s)/len(s))
-    print accus
-    
-    for i in range(lnd/7):
-        plt.figure(year-2008, figsize=(24, 18))
-        for year in range(2009, 2015):
-            xx =aXy[year][0]
-            yy =aXy[year][1]
-            if (yy == 1).all() or (yy == -1).all():
-                print "only one class"
-            else:
-                plt.plot(xx[:,i*2], label=str(year))
-                first1 = np.where(yy>0)[0][0]
-                plt.plot(first1, xx[:,i*2][first1], 'rD')
+            yy =aXy[ucity][year][1]
+            r = clfs[i].predict(xx[i])
+            s.append(metrics.accuracy_score(yy, r))
+        accus.append(np.mean(s))
+        accStd.append(np.std(s))
 
-        plt.ylabel('ah on average of ' + str((i+1)*7))
-        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        plt.savefig("./image3/"+str((i+1)*7)+".png")
-        plt.close()
+    larm =  max(accus) # largest mean
+    inlm = accus.index(larm) # index of the largest mean
+    lows =  min(accStd) # lowest std
+    inls = accStd.index(lows) # index of the lowest std
+    temp = [(x+1)*7 for x in range(data["LND"]/7)]
+    plt.figure(100, figsize=(24, 18))
+    plt.title('City: '+ ucity + " Year: " + str(uyear))
+    plt.plot(temp, accus)
+    plt.plot(temp,accus, 'rD', label="mean")
+    plt.plot(temp, accStd)
+    plt.plot(temp,accStd, 'gD', label="std")
+    plt.plot([(inlm+1)*7, (inlm+1)*7],[0, 1], 'r-', linewidth=2)
+    plt.text((inlm+1)*7, 0.5, str((inlm+1)*7) + " days")
+    plt.plot([(inls+1)*7, (inls+1)*7],[0, 1], 'g-', linewidth=2)
+    plt.text((inls+1)*7, 0.5, str((inls+1)*7) + " days")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.show()
+    plt.close()
+    
+
+    allClfs={}
+    for j in jc:
+        allClfs[j] = []
+        clfs=[]
+        x =aXy[j][uyear][0]
+        xx = np.hsplit(x,x.shape[1]/2)
+        yy =aXy[j][uyear][1]
+        if (yy == 1).all() or (yy == -1).all():
+            print "only one class"
+        else:
+            for i in xx:
+                clf = linear_model.LogisticRegression(C=0.5)
+                clf.fit(i,yy)
+                clfs.append(clf)
+        allClfs[j] = clfs
+
+
+    AllAccus={}
+    for j in jc:
+        AllAccus[j]=[]
+        for i in range(len(allClfs[j])):
+            s=[]
+            for n in range(2009, 2015):
+                x =aXy[j][n][0]
+                xx = np.hsplit(x,x.shape[1]/2)
+                yy =aXy[j][n][1]
+                r = allClfs[j][i].predict(xx[i])
+                s.append(metrics.accuracy_score(yy, r))
+            AllAccus[j].append(sum(s)/len(s))
+
+    for i in AllAccus.keys():
+        if AllAccus[i] == []:
+            del AllAccus[i]
+    meanV=[]
+    stdV =[]
+    for i in range(lnd/7):
+        fs=[]
+        for j in AllAccus.keys():
+            fs.append(AllAccus[j][i])
+        meanV.append(np.mean(fs))
+        stdV.append(np.std(fs))
+
+    larm =  max(meanV) # largest mean
+    inlm = meanV.index(larm) # index of the largest mean
+    lows =  min(stdV) # lowest std
+    inls = stdV.index(lows) # index of the lowest std
+    temp = [(x+1)*7 for x in range(lnd/7)]
+    plt.figure(101, figsize=(16, 12))
+    plt.plot(temp, meanV)
+    plt.plot(temp,meanV, 'rD', label="mean")
+    plt.plot(temp, stdV)
+    plt.plot(temp,stdV, 'gD', label="std")
+    plt.title("Number of available cities: " + str(len(AllAccus.keys())))
+    plt.plot([(inlm+1)*7, (inlm+1)*7],[0, 1], 'r-', linewidth=2)
+    plt.text((inlm+1)*7, 0.5, str((inlm+1)*7) + " days")
+    plt.plot([(inls+1)*7, (inls+1)*7],[0, 1], 'g-', linewidth=2)
+    plt.text((inls+1)*7, 0.5, str((inls+1)*7) + " days")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.show()
+    plt.close()
+
+    
         
 
     
@@ -161,8 +240,6 @@ def apply_evaluation(paras,  clf, data):
 
     X = data["X"]
     y = data["y"]
-
-    testAllXyModel(data)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.5, \
                                                         random_state=0)
