@@ -7,9 +7,34 @@ import matplotlib.pyplot as plt
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+def read_raw_data(address):
+
+    l=[]
+    with open(address) as csvfile:
+        r = csv.DictReader(csvfile)
+        for line in r:
+            l.append(line)
+
+    return l
+
+
+
+
+
+
 #remove duplicate cities: Berlin2, Essen2
 def remove_duplicate_city(city1, hos):
-
     removed_ind=[]
     for i in range(len(city1)):
         if city1[i][-1] == "2":
@@ -26,7 +51,6 @@ def remove_duplicate_city(city1, hos):
     return [city1, hos]
 
 
-
 def load_hospital_data(data, address):
     dates = data["dates"]
     hos = data["hospital"]
@@ -35,11 +59,8 @@ def load_hospital_data(data, address):
     ss = data["season_start"]
 
     
-    l=[]
-    with open(address+"rsv.csv") as csvfile:
-        r = csv.DictReader(csvfile)
-        for line in r:
-            l.append(line)
+    #read raw data from csv file
+    l = read_raw_data(address+"rsv.csv")
 
     #remove data in August and September
 #    newl=[]
@@ -94,7 +115,6 @@ def load_hospital_data(data, address):
                     had_one=1
                 else:    ys[i,j] = 0
 
-    
     data["hospital"] = hos
     data["ylabels"] = ys
     data["city1"] = city1
@@ -106,42 +126,31 @@ def load_hospital_data(data, address):
 
 
     
-def read_raw_data(data,  address):
-
-    l=[]
-    with open(address) as csvfile:
-        r = csv.DictReader(csvfile)
-        for line in r:
-            l.append(line)
-
-    return l
 
 
 
 
 
-
-
-#correct the non_available data (NaN and NA -> -999)
+#correct the non_available data (-999 -> based on adjacent data)
 def correct_data(d):
     (r, c) = d.shape
 
     for i in d.T:
-        #correct non_available data "-999" at the prefix of vector
+        #correct non_available data "-999" as the prefix
         if int(i[0]) == -999:
             for j in range(1,r):
                 if int(i[j]) != -999:
                     i[0:j] = np.zeros(shape=(j), dtype=np.float) + i[j]
                     break
 
-        #correct non_available data "-999" at the sufffix of vector
+        #correct non_available data "-999" as the sufffix
         if int(i[r-1]) == -999:
             for j in range(r-2, -1, -1):
                 if int(i[j]) != -999:
                     i[j+1:r] = np.zeros(shape=(r-j-1), dtype=np.float) + i[j]
                     break
 
-        #correct non_available data "-999" in the middle of vector
+        #correct non_available data "-999" in the middle 
         start=0
         end=0
         step_size=0.0
@@ -166,25 +175,25 @@ def correct_data(d):
 
         
 def load_weather_data(data, address):
-    weather={}
-    city2=[]
+    weather=data["weather"]
+    city2=data["weather"]
     dates = data["dates"]
     lnd = data["LND"]
 
-    #refine weather data by "dates" in hospital data
     #AH --> AbsHumidity
     #T -- > temperature
-    AH = read_raw_data(data, address+"AbsHumidity.csv")
-    T = read_raw_data(data, address+"temperature.csv")
+    AH = read_raw_data(address+"AbsHumidity.csv")
+    T = read_raw_data(address+"temperature.csv")
     
 
     # calculate the min city set that all data-set share
     city2 = set(AH[0].keys()) & set(T[0].keys())
     city2.remove("date")
     city2 = list(city2)
+    city2.sort()
 
 
-    #remove "NA" from the refined data
+    #remove "NA" from the refined data NA -> -999
     r = len(AH)
     for i in range(r):
         for j in city2:
@@ -195,19 +204,17 @@ def load_weather_data(data, address):
 
 
 
-    #initialize the matrix for the weather data
+    #initialize the matrix for holding weather data
     ah = np.zeros(shape=(r, len(city2)), dtype=np.float)
     t = np.zeros(shape=(r, len(city2)), dtype=np.float)
 
 
     #insert weather data into matrix
-    dah = [] # date index of AH
-    dt = [] # date index of T
+    daht = [] # date index of AH and T
     for i in range(r):
         ah[i, :] = [float(AH[i][x]) for x in city2]
         t[i, :] = [float(T[i][x]) for x in city2]
-        dah.append(AH[i]["date"])
-        dt.append(T[i]["date"])
+        daht.append(AH[i]["date"])
 
     #correct the non-available data, note by "-999"
     ah = correct_data(ah)
@@ -220,10 +227,10 @@ def load_weather_data(data, address):
         ah1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
         t1 = np.zeros(shape=(len(dates), len(city2)), dtype=np.float)
         for i in range(len(dates)):
-            p = dah.index(dates[i])
-            q = dah.index(dates[i])
+            p = daht.index(dates[i])
             ah1[i, :] = sum(ah[(p-7*(j+1)+1):(p+1), :])/(7*(j+1))
             t1[i, :] = sum(t[(p-7*(j+1)+1):(p+1), :])/(7*(j+1))
+        #weather data with the index of "dates"        
         data["weather"].append(ah1)
         data["weather"].append(t1)
 
@@ -248,6 +255,7 @@ def calc_allXy(data):
         weather_id = city2.index(n)
         rsv_id = city1.index(n)
         Xy={}
+        
         #filter data given specific year
         for year in range(2009, 2015):
             start = 0
@@ -296,18 +304,74 @@ def calc_allXy(data):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+def calc_avi_RSV_ss(data):
+    hos = data["hospital"]
+    city1 = data["city1"]
+    city2 = data["city2"]
+    ars = data["ars"]
+    ss = data["season_start"]
+    jcity = data["jcity"]
+
+    for n in city1:
+        cid = city1.index(n)
+        rc={}
+        for m in range(len(ss)-1):
+            s = sum(hos[ss[m]:ss[m+1] ,cid])
+            if s > 200:
+                rc[2009+m] = s
+        if rc.keys() != []:
+            print rc.keys()
+            ars[n] = rc
+
+    fo = open("ava_cities.txt", "w")
+    a = ""
+    for i in jcity:
+        if ars.has_key(i):
+            a+=i 
+            a+="\n"
+            for j in ars[i].keys():
+                a+=str(j)
+                a+=":    "
+                a+=str(ars[i][j])
+                a+="\n"
+    fo.write(a)            
+            
+    data["ars"] = ars
+    
+
+
+
+
+
+
+
+
+
+
+
+
 #This function will calculate X and y
 #@paras: system parameters
 #@data: data structure holding all data
 #@address1, file address of hospital data
 #@address2, file address of weather data
-
 def load_data(paras, data, address):
 
-    #load all datasets
+
+    #load all datasets into matrix
     load_hospital_data(data, address)
     load_weather_data(data, address)
-
 
     allXy = data["allXy"]
     city1 = data["city1"]
@@ -316,10 +380,21 @@ def load_data(paras, data, address):
     city = paras['city']
 
 
+
+    #retrive joint cities of two dataset
+    jcity = list(set(city2) & set(city1))
+    jcity.sort()
+    data["jcity"] = jcity
+
+
+    #calc_available_RSV season
+    calc_avi_RSV_ss(data)
+
+
+
     #retrieve X and y
-    print set(city2) & set(city1)
     aXy = calc_allXy(data)
-    #use all features as the X
+    #use all "advanced days" as the X
     [X, y] = aXy[city][year]
 
 

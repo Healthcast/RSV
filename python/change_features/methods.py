@@ -109,6 +109,7 @@ def testAllXyModel(paras, data):
     aXy = data["allXy"]
     lnd = data["LND"]
     jc = data["jcity"]
+    ars = data["ars"]
     ucity = paras["city"]
     uyear = paras["year"]
 
@@ -205,9 +206,13 @@ def testAllXyModel(paras, data):
                 s.append(metrics.accuracy_score(yy, r))
             AllAccus[j].append(sum(s)/len(s))
 
+    temp={}
     for i in AllAccus.keys():
-        if AllAccus[i] == []:
-            del AllAccus[i]
+        if AllAccus[i] != [] and ars.has_key(i) and ars[i].has_key(uyear):
+            temp[i] = AllAccus[i]
+    AllAccus = temp
+
+
     meanV=[]
     stdV =[]
     for i in range(lnd/7):
