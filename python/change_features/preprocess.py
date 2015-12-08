@@ -7,14 +7,32 @@ import matplotlib.pyplot as plt
 
 
 
+#remove duplicate cities: Berlin2, Essen2
+def remove_duplicate_city(city1, hos):
+
+    removed_ind=[]
+    for i in range(len(city1)):
+        if city1[i][-1] == "2":
+            removed_ind.append(i)
+            for j in range(len(city1)):
+                if city1[i][:-1] == city1[j]:
+                    hos[:,j] = hos[:,j] +hos[:,i]
+    j=0                     
+    for i in removed_ind:
+        del city1[i-j]
+        j+=1
+
+    hos = np.delete(hos, removed_ind, 1)
+    return [city1, hos]
+
 
 
 def load_hospital_data(data, address):
-    dates = []
-    hos = np.zeros(shape=(10,10), dtype=np.int)
-    ys = np.zeros(shape=(10,10), dtype=np.int)
-    city1 = []
-    ss = []
+    dates = data["dates"]
+    hos = data["hospital"]
+    ys = data["ylabels"]
+    city1 = data["city1"]
+    ss = data["season_start"]
 
     
     l=[]
@@ -38,7 +56,7 @@ def load_hospital_data(data, address):
 
     #load city names
     city1 = newl[0].keys()
-
+    city1.sort()
 
     #init ylabel and hospital data matrix 
     hos = np.zeros(shape=(len(dates), len(city1)), dtype=np.int)
@@ -49,6 +67,12 @@ def load_hospital_data(data, address):
     for i in range(len(newl)):
         hos[i,:] = [newl[i][x] for x in city1]
 
+
+    #if one city have 2 hospital, add data together
+    [city1, hos] = remove_duplicate_city(city1, hos)
+
+
+
     #determine the start week of each season: Octorber 01
     for p in range(2009, 2016):
         start=0
@@ -57,7 +81,6 @@ def load_hospital_data(data, address):
             if str(p) == d[0] and d[1] == '10' and start == 0:
                 ss.append(j)
                 start = 1
-#    ss = [0] + ss
     ss = ss + [len(dates)-1]
 
     #label and insert the "start week" to ylabel
@@ -65,23 +88,18 @@ def load_hospital_data(data, address):
         for m in range(len(ss)-1):
             had_one=0
             for i in range(ss[m], ss[m+1]-1):
-                if hos[i,j]>0 and hos[i+1,j] > hos[i,j] and hos[i+2,j] > hos[i,j] \
+                if hos[i,j]>0 and hos[i+1,j] > hos[i,j] and hos[i+2,j] > hos[i+1,j] \
                    and had_one==0:
                     ys[i,j] = 1
                     had_one=1
                 else:    ys[i,j] = 0
 
+    
     data["hospital"] = hos
     data["ylabels"] = ys
     data["city1"] = city1
     data["dates"] = dates
     data["season_start"] = ss
-
-
-
-
-
-
 
 
 
@@ -302,8 +320,7 @@ def load_data(paras, data, address):
     print set(city2) & set(city1)
     aXy = calc_allXy(data)
     #use all features as the X
-    X = aXy[city][year][0]
-    y = aXy[city][year][1]
+    [X, y] = aXy[city][year]
 
 
 #    [X, aXy] = remove_features(X, aXy)
@@ -316,16 +333,3 @@ def load_data(paras, data, address):
 
 
 
-    ########################
-    #per week one feature  --> solving time series
-    #This approach doesnot work since: one point one dimension,  
-    #there will be a clear hyperplane that almost determined by date info
-    ########################
-#    m =0
-#    while m < len(dates):
-#        a = np.zeros(shape=(len(dates), 1), dtype=np.int)
-#        a = a - 1
-#        a[m]=1
-#        m+=1
-#        X = np.concatenate((X, a), axis=1)            
-#        

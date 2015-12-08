@@ -117,25 +117,27 @@ def testAllXyModel(paras, data):
 #        for year in range(2009, 2015):
 #            xx =aXy[ucity][year][0]
 #            yy =aXy[ucity][year][1]
-#            if (yy == 1).all() or (yy == -1).all():
+#            if (yy == 1).all() or (yy == -1).all() or (yy == 0).all():
 #                print "only one class"
 #            else:
-#                plt.plot(xx[:,i*2], label=str(year))
+#                plt.plot(xx[:,i*2+1], label=str(year))
 #                first1 = np.where(yy>0)[0][0]
-#                plt.plot(first1, xx[:,i*2][first1], 'rD')
+#                plt.plot(first1, xx[:,i*2+1][first1], 'rD')
 #
 #        plt.ylabel('ah on average of ' + str((i+1)*7))
 #        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 #        plt.savefig("./image3/"+str((i+1)*7)+".png")
 #        plt.close()
-
+#
 
 
     xs = np.hsplit(X,X.shape[1]/2)
     clfs=[]
     for i in range(lnd/7):
         clf = linear_model.LogisticRegression(C=0.5)
-        clf.fit(xs[i],y)
+        m = xs[i].copy()
+#        m.shape=(m.shape[0],2)
+        clf.fit(m,y)
         clfs.append(clf)
 
     accus = []
@@ -146,7 +148,9 @@ def testAllXyModel(paras, data):
             x =aXy[ucity][year][0]
             xx = np.hsplit(x,x.shape[1]/2)
             yy =aXy[ucity][year][1]
-            r = clfs[i].predict(xx[i])
+            m = xx[i].copy()
+#            m.shape=(m.shape[0],1)
+            r = clfs[i].predict(m)
             s.append(metrics.accuracy_score(yy, r))
         accus.append(np.mean(s))
         accStd.append(np.std(s))
@@ -178,7 +182,7 @@ def testAllXyModel(paras, data):
         x =aXy[j][uyear][0]
         xx = np.hsplit(x,x.shape[1]/2)
         yy =aXy[j][uyear][1]
-        if (yy == 1).all() or (yy == -1).all():
+        if (yy == 1).all() or (yy == -1).all() or (yy == 0).all():
             print "only one class"
         else:
             for i in xx:
