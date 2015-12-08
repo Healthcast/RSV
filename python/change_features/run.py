@@ -93,9 +93,12 @@ def main():
             
 
     preprocess.load_data(paras, data,"../data/")
-#    clf = methods.apply_algorithm(paras, data)
-#    methods.apply_evaluation(paras, clf, data)
-#    methods.testAllXyModel(paras, data)
+    preprocess.plotHos(data, "")
+    preprocess.modi_y_man(data)
+    preprocess.plotHos(data, "after")
+    clf = methods.apply_algorithm(paras, data)
+    methods.apply_evaluation(paras, clf, data)
+    methods.testAllXyModel(paras, data)
 
 if __name__ == "__main__":
     main()

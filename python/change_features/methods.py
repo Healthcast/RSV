@@ -132,17 +132,20 @@ def testAllXyModel(paras, data):
 #
 
 
+    #train models based on different average days in advanced
     xs = np.hsplit(X,X.shape[1]/2)
     clfs=[]
     for i in range(lnd/7):
         clf = linear_model.LogisticRegression(C=0.5)
+        #one group feature: [ah t]
         m = xs[i].copy()
 #        m.shape=(m.shape[0],2)
         clf.fit(m,y)
         clfs.append(clf)
 
-    accus = []
-    accStd=[]
+    #test the trained model in other years
+    accus = []    # mean of accuracies
+    accStd=[]    # std of accuracies
     for i in range(len(clfs)):
         s=[]
         for year in range(2009, 2015):
@@ -193,6 +196,7 @@ def testAllXyModel(paras, data):
         allClfs[j] = clfs
 
 
+    #train models on all cities
     AllAccus={}
     for j in jc:
         AllAccus[j]=[]
@@ -206,13 +210,14 @@ def testAllXyModel(paras, data):
                 s.append(metrics.accuracy_score(yy, r))
             AllAccus[j].append(sum(s)/len(s))
 
+    # only calc cities with enough patients in one season 
     temp={}
     for i in AllAccus.keys():
         if AllAccus[i] != [] and ars.has_key(i) and ars[i].has_key(uyear):
             temp[i] = AllAccus[i]
     AllAccus = temp
 
-
+    #test models on all cities
     meanV=[]
     stdV =[]
     for i in range(lnd/7):

@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 
 
 
+
+
 def read_raw_data(address):
 
     l=[]
@@ -49,6 +51,8 @@ def remove_duplicate_city(city1, hos):
 
     hos = np.delete(hos, removed_ind, 1)
     return [city1, hos]
+
+
 
 
 def load_hospital_data(data, address):
@@ -264,8 +268,11 @@ def calc_allXy(data):
                 d = dates[i].split('-')
                 if int(d[0]) == year and d[1] == "08" and start == 0:
                     start = i
-                if int(d[0]) == year+1 and d[1] == "02" and end == 0:
+                if int(d[0]) == year+1 and d[1] == "03" and end == 0:
                     end = i
+            if year == 2014 and end == 0:
+                end = len(dates)-1
+
             X = np.zeros(shape=(end-start, lnd/7*2), dtype=np.float)
             y = np.zeros(shape=(end-start, 1), dtype=np.int)
     
@@ -331,7 +338,6 @@ def calc_avi_RSV_ss(data):
             if s > 200:
                 rc[2009+m] = s
         if rc.keys() != []:
-            print rc.keys()
             ars[n] = rc
 
     fo = open("ava_cities.txt", "w")
@@ -390,13 +396,10 @@ def load_data(paras, data, address):
     #calc_available_RSV season
     calc_avi_RSV_ss(data)
 
-
-
     #retrieve X and y
     aXy = calc_allXy(data)
     #use all "advanced days" as the X
     [X, y] = aXy[city][year]
-
 
 #    [X, aXy] = remove_features(X, aXy)
     data["X"] = X
@@ -407,4 +410,106 @@ def load_data(paras, data, address):
 
 
 
+
+def plotHos(data, name):
+    dates = data["dates"]
+    hos = data["hospital"]
+    ys = data["ylabels"]
+    city1 = data["city1"]
+    city2 = data["city2"]
+    ars = data["ars"]
+    aXy =  data["allXy"]
+
+    for n in city1:
+        if ars.has_key(n) and (n in city2):
+            cid = city1.index(n)
+            for year in range(2009, 2015):
+                if ars[n].has_key(year):
+                    start = 0
+                    end =0
+                    for i in range (len(dates)):
+                        d = dates[i].split('-')
+                        if int(d[0]) == year and d[1] == "08" and start == 0:
+                            start = i
+                        if int(d[0]) == year+1 and d[1] == "03" and end == 0:
+                            end = i
+                    if year == 2014 and end == 0:
+                        end = len(dates)-1
+
+                    p = hos[start:end, cid]
+                    y = aXy[n][year][1]
+
+                    #one class
+                    if (y == 1).all() or (y == -1).all() or (y == 0).all():
+                        continue
+
+                    plt.plot(p, '-', linewidth=2)
+                    for j in range(len(y)):
+                        if y[j] == 1 :
+                            plt.plot([j, j],[0, 220], 'r-', linewidth=2)
+                            break
+                    plt.savefig("./image1/"+n+"_"+str(year)+"_"+name+".png")
+                    plt.close()
+
+def modi_y(city, year, seperator, data):
+    aXy =  data["allXy"]
+    y = aXy[city][year][1]
+    y[:seperator]=-1
+    y[seperator:]=1
+    aXy[city][year][1] = y
+    data["allXy"] = aXy
+
+def modi_y_man(data):
+    modi_y("Berlin", 2009, 22, data)
+    
+    modi_y("Bonn", 2009, 12, data)
+    modi_y("Bonn", 2010, 13, data)
+    modi_y("Bonn", 2013, 0, data)
+    
+#    modi_y("Dusseldorf", 2009, 12, data)
+    modi_y("Dusseldorf", 2011, 15, data)
+    modi_y("Dusseldorf", 2012, 21, data)
+    modi_y("Dusseldorf", 2013, 24, data)
+    modi_y("Dusseldorf", 2014, 21, data)
+            
+    modi_y("Essen", 2012, 24, data)
+#    modi_y("Essen", 2013, 0, data)
+#    modi_y("Essen", 2014, 17, data)
+
+    modi_y("Freiburg", 2009, 16, data)
+    modi_y("Freiburg", 2010, 22, data)
+#    modi_y("Freiburg", 2011, 0, data)
+    modi_y("Freiburg", 2012, 15, data)
+#    modi_y("Freiburg", 2013, 0, data)
+    modi_y("Freiburg", 2014, 18, data)
+
+    modi_y("Hamburg", 2010, 12, data)
+    modi_y("Hamburg", 2011, 16, data)
+    modi_y("Hamburg", 2012, 17, data)
+    modi_y("Hamburg", 2013, 0, data)
+
+    modi_y("Hannover", 2011, 16, data)
+    modi_y("Hannover", 2013, 5 , data)
+#    modi_y("Hannover", 2014, 0, data)
+
+    modi_y("Koln", 2010, 0, data)
+    modi_y("Koln", 2012, 0, data)
+    modi_y("Koln", 2013, 0, data)
+    modi_y("Koln", 2014, 0, data)
+
+    modi_y("Mainz", 2012, 17, data)
+    modi_y("Mainz", 2014, 19, data)
+
+    modi_y("Munchen", 2011, 0, data)
+    modi_y("Munchen", 2012, 0, data)
+    modi_y("Munchen", 2013, 0, data)
+
+    modi_y("Weiden", 2012, 19, data)
+    modi_y("Weiden", 2013, 23, data)
+    modi_y("Weiden", 2014, 21, data)
+
+ #   modi_y("Wurzburg", 2010, 0, data)
+    modi_y("Wurzburg", 2011, 0, data)
+    modi_y("Wurzburg", 2013, 23, data)
+    modi_y("Wurzburg", 2014, 5, data)
 
